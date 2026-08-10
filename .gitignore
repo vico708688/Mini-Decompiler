@@ -1,0 +1,4 @@
+test/*
+graph.dot
+graph.png
+build/*
