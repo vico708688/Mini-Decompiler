@@ -70,5 +70,7 @@ int decompile(char* file_path) {
     freeTokens(&tokenList);
 	free(backup_text);
 
+    // TODO: add a free_program and free_cfg
+
     return 0;
 }
