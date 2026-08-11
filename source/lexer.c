@@ -12,22 +12,28 @@ int line = 1;
 void addToken(TokenList *tokenList, enum Token_t kind, union TokenValue value, bool ownstr) {
 	Token token = { .kind = kind, .value = value, .line = line, .column = column, .ownstr = ownstr };
 	
-	if (tokenList->indexToken >= tokenList->size) {
+	if (tokenList->token_index >= tokenList->nb_tokens) {
 		Token *tmp = NULL;
-		tokenList->size *= 2;
-		tmp = realloc(tokenList->tokens, tokenList->size * sizeof(Token));
+		tokenList->nb_tokens *= 2;
+		tmp = realloc(tokenList->tokens, tokenList->nb_tokens * sizeof(Token));
 		if (tmp == NULL) {
-				freeTokens(tokenList);
+				free_tokens(tokenList);
 				perror("Error realloc\n");
 				exit(1);
 		}
 		tokenList->tokens = tmp;
+		
+		// after a realloc, initialization of the new structs !
+		for (int i = tokenList->token_index; i < tokenList->nb_tokens; i++)
+		{
+			tokenList->tokens[i].ownstr = false;
+		}
 	}
-	tokenList->tokens[tokenList->indexToken] = token; /* tester s'il reste de la place dans la liste */
-	(tokenList->indexToken)++;
+	tokenList->tokens[tokenList->token_index] = token;
+	(tokenList->token_index)++;
 }
 
-// dispatch table
+// TODO: dispatch table
 bool canAddKeywordToken(TokenList *tokenList, union TokenValue value)
 {
 	if (strcmp(value.value_str, "mov") == 0) {
@@ -143,7 +149,7 @@ bool isType(char** text, int* lenToken, regex_t* regex) {
 }
 
 int getInteger(char** text, int lenToken) {
-	char* string = extractSubString(text, lenToken);
+	char* string = extract_sub_string(text, lenToken);
 	
 	int number = atoi(string);
 	
@@ -152,7 +158,7 @@ int getInteger(char** text, int lenToken) {
 }
 
 char* getChar(char** text, int lenToken) {
-	char* word = extractSubString(text, lenToken);
+	char* word = extract_sub_string(text, lenToken);
 
 	return word;
 }
@@ -167,13 +173,13 @@ void advance(char** text, int nb, int* nb_instructions) {
 	(*text) += nb; /* /!\ Ordre des opérateurs : *text++ != *(text++) */
 }
 
-TokenList lexer(char** text, int* nb_instructions) {
+TokenList* lexer(char** text, int* nb_instructions) {
 	int lenToken = 0;
 	*nb_instructions = 0;
 	regexList regexes;
-	initRegexes(&regexes);
+	init_regexes(&regexes);
 
-	TokenList *tokenList = initTokenList(text);
+	TokenList *tokenList = init_token_list(text);
 
 	/* Analyse lexicale */
 	while (!isAtEnd(text)) {
@@ -256,8 +262,8 @@ TokenList lexer(char** text, int* nb_instructions) {
 		}
 	}
 
-	// printf("Liste des tokens (%d tokens):\n\n", tokenList->indexToken);
-	// for (int i = 0; i < tokenList->indexToken; i++) {
+	// printf("Liste des tokens (%d tokens):\n\n", tokenList->token_index);
+	// for (int i = 0; i < tokenList->token_index; i++) {
 	// 	Token token = tokenList->tokens[i];
 	// 	printf("#%d, TYPE: %d, VALUE: %s, LINE: %d, COLUMN: %d\n", i, token.kind, print_token(&token), token.line, token.column);
 		
@@ -265,7 +271,7 @@ TokenList lexer(char** text, int* nb_instructions) {
 	// printf("\n");
 	// exit(1);
 
-	freeRegexes(&regexes);
+	free_regexes(&regexes);
 
-	return *tokenList;
+	return tokenList;
 }

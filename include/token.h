@@ -70,8 +70,8 @@ typedef struct {
 
 typedef struct {
 	Token* tokens;
-    int size;
-	int indexToken;
+    int nb_tokens;
+	int token_index;
 } TokenList;
 
 char* print_token(Token* token);

@@ -173,7 +173,7 @@ typedef struct Call
 typedef struct Jump
 {
     Condition* condition;
-    bool jump_resolved;
+    bool jump_resolved; // TODO: change into 2 fields of int (true_offset and false_offset) -> cleaner
     Instruction* true_branch;
     Instruction* false_branch;
 } Jump;

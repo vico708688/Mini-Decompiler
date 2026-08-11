@@ -8,22 +8,22 @@
 #include "token.h"
 
 // TODO: delete
-#include "pretty_printer.h"
+// #include "pretty_printer.h"
 
 Token show_next_token(TokenList* tokenList)
 {
-    return tokenList->tokens[tokenList->indexToken];
+    return tokenList->tokens[tokenList->token_index];
 }
 
 Token accept_token(TokenList* tokenList)
 {
-    tokenList->indexToken++;
-    if (tokenList->indexToken - 1 < tokenList->size)
+    tokenList->token_index++;
+    if (tokenList->token_index - 1 < tokenList->nb_tokens)
     {
-        return tokenList->tokens[tokenList->indexToken - 1];
+        return tokenList->tokens[tokenList->token_index - 1];
     }
     
-    fprintf(stderr, "Error token indice (%d > %d)\n", tokenList->indexToken-1, tokenList->size);
+    fprintf(stderr, "Error token indice (%d > %d)\n", tokenList->token_index-1, tokenList->nb_tokens);
     exit(1);
 }
 
@@ -38,7 +38,7 @@ Token expect_token(TokenList* tokenList, enum Token_t tokenType)
 
 Asm* parser(TokenList* tokenList, int nb_instructions)
 {
-    tokenList->indexToken = 0;
+    tokenList->token_index = 0;
 
     Asm *program = parse_asm(tokenList, nb_instructions);
 
@@ -71,7 +71,7 @@ Asm* parse_asm(TokenList* tokenList, int nb_instructions)
     program->instr_idx = 0;
     program->nb_instructions = nb_instructions;
     program->instructions = malloc(program->nb_instructions * sizeof(Instruction));
-    
+
     for (int offset = 0; offset < program->nb_instructions; offset++)
     {
         program->instructions[program->instr_idx++] = parse_instruction(tokenList, offset);
@@ -222,7 +222,6 @@ Operand* parse_operand(TokenList* tokenList)
     {
         // printf("start int\n");
         operand->kind = OPERAND_INT;
-        operand->integer = malloc(sizeof(ExprInt));
 
         operand->integer = parse_int(tokenList);
         // printf("end int\n");
@@ -372,7 +371,6 @@ Src* parse_src(TokenList* tokenList)
     {
         // printf("start int\n");
         src->kind = SRC_INT;
-        src->integer = malloc(sizeof(ExprInt));
 
         src->integer = parse_int(tokenList);
         // printf("end int\n");
@@ -494,7 +492,6 @@ Instruction parse_mov(TokenList* tokenList)
     expect_token(tokenList, TK_COMMA);
     
     Src* src = parse_src(tokenList);
-    
     
     DstKind dstType = dst->kind;
     
@@ -622,6 +619,7 @@ Instruction parse_cmp(TokenList* tokenList)
 {
     // printf("parsing cmp\n");
     Instruction instruction;
+    instruction.comparison = malloc(sizeof(Comparison));
     
     expect_token(tokenList, MN_CMP);
 
@@ -632,7 +630,6 @@ Instruction parse_cmp(TokenList* tokenList)
     Src* src = parse_src(tokenList);
     
     instruction.kind = INSTR_CMP;
-    instruction.comparison = malloc(sizeof(Comparison));
     
     instruction.comparison->dst = dst;
     instruction.comparison->src = src;
@@ -705,8 +702,7 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
         exit(1);
     }
     
-    Condition* condition;
-    condition = malloc(sizeof(Condition));
+    Condition* condition = malloc(sizeof(Condition));
     if (condition == NULL)
     {
         fprintf(stderr, "malloc() Condition failed\n");
@@ -749,11 +745,15 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
         break;
     }
 
-    parse_dst(tokenList);
+    // TODO: replace (bogus check, just to continue the program)
+    Dst* dst = parse_dst(tokenList);
+    free_dst(dst);
 
     expect_token(tokenList, TK_JUMP_ARROW);
 
-    int jump_addr = parse_int(tokenList)->value;
+    ExprInt* jump = parse_int(tokenList);
+    int jump_addr = jump->value;
+    free(jump);
 
     instruction.jump->true_branch = malloc(sizeof(Instruction));
     if (instruction.jump->true_branch == NULL)

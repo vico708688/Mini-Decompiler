@@ -38,11 +38,11 @@ typedef struct Node {
     Instruction* start_instruction; // instructions contiguous in memory
     int nb_instructions;
 
-    Node** children; // liked list (0-2 elements)
+    Node** children; // linked list (0-2 elements)
     int nb_children;
     int child_idx;
     
-    Node** parents; // liked list (0-n elements)
+    Node** parents; // linked list (0-n elements)
     int nb_parents;
     int parent_idx;
 

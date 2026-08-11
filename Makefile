@@ -6,7 +6,7 @@ SOURCES := $(wildcard $(SRC)/*.c)
 OBJECTS := $(patsubst $(SRC)/%.c, $(DST)/%.o, $(SOURCES))
 
 C_FLAGS = -I$(INC)
-FLAGS = -Wall
+FLAGS = -Wall -g
 
 all: main
 

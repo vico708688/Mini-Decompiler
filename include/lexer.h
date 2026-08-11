@@ -19,7 +19,7 @@ char* getChar(char** text, int lenToken);
 
 void advance(char** text, int nb, int* nb_instructions);
 
-TokenList lexer(char** text, int* nb_instructions);
+TokenList* lexer(char** text, int* nb_instructions);
 
 
 #endif

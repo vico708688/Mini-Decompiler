@@ -25,17 +25,17 @@
       (architecture independent)            <- skipped
                 │
                 v
-               CFG
+               CFG                          <- done
                 │
                 v
-            SSA (often)
+            SSA (often)                     <- skipped
                 │
                 v
-          Optimisations
+          Optimisations                     <- skipped
  (constant folding, propagation...)
                 │
                 v
-        CFG structuration
+        CFG structuration                   <- 
          (No More Gotos)
                 │
                 v
@@ -50,9 +50,10 @@ int decompile(char* file_path) {
     char* backup_text = asmfile;
     int nb_instructions;
 
-    TokenList tokenList = lexer(&asmfile, &nb_instructions);
+    // TODO remove white space and carriage return
+    TokenList* tokenList = lexer(&asmfile, &nb_instructions);
 
-    Asm* program = parser(&tokenList, nb_instructions);
+    Asm* program = parser(tokenList, nb_instructions);
 
     // Visitor visitor;
 
@@ -67,10 +68,11 @@ int decompile(char* file_path) {
 
     // graph_to_graphviz(cfg, "graph_simplified.dot", "graph_simplified.png");
 
-    freeTokens(&tokenList);
+    free_asm(program);
+    free_cfg(cfg);
+    free_tokens(tokenList);
 	free(backup_text);
 
-    // TODO: add a free_program and free_cfg
 
     return 0;
 }

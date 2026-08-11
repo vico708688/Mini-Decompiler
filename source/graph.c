@@ -166,56 +166,6 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
     return cfg;
 }
 
-void add_parent(Node* current_node, Node* parent)
-{
-    Node** parents = current_node->parents;
-    if (current_node->parent_idx > current_node->nb_parents)
-    {
-        parents = realloc(parents, sizeof(*(parents)) + sizeof(Node*));
-        (current_node->nb_parents)++;
-    }
-    
-    current_node->parents[current_node->parent_idx++] = parent;
-}
-
-void add_child(Node* current_node, Node* child)
-{
-    Node** children = current_node->children;
-    if (current_node->child_idx > current_node->nb_children)
-    {
-        children = realloc(children, sizeof(*(children)) + sizeof(Node*));
-        (current_node->nb_children)++;
-    }
-    
-    current_node->children[current_node->child_idx++] = child;
-}
-
-void add_edge(Cfg* cfg, Node* start, Node* target)
-{
-    // sould not be taken
-    if (cfg->edge_idx > cfg->nb_edges)
-    {
-        cfg->edges = realloc(cfg->edges, sizeof(*(cfg->edges)) + sizeof(Edge*));
-        (cfg->nb_edges)++;
-    }
-
-    cfg->edges[cfg->edge_idx].start = start;
-    cfg->edges[cfg->edge_idx].target = target;
-    (cfg->edge_idx)++;
-}
-
-void add_node(Cfg* cfg, Node* node)
-{
-    // sould not be taken
-    if (cfg->node_idx > cfg->nb_nodes)
-    {
-        cfg->nodes = realloc(cfg->nodes, sizeof(*(cfg->nodes)) + sizeof(Node*));
-        (cfg->nb_nodes)++;
-    }
-
-    cfg->nodes[(cfg->node_idx)++] = *node;
-}
-
 Instruction* get_instruction_from_node(Node* node, int instruction_offset)
 {
     return (Instruction*)(node->start_instruction + instruction_offset);
@@ -295,10 +245,10 @@ Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_no
     }
     else
     {
-        int next_node_start_instruction_offset = (last_instruction + 1)->offset;
         // not last current_node
         if (last_instruction->offset != last_instruction_last_node)
         {
+            int next_node_start_instruction_offset = (last_instruction + 1)->offset;
             current_node->nb_children = 1;
             current_node->children = malloc(current_node->nb_children * sizeof(Node*));
             
@@ -311,25 +261,13 @@ Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_no
     return current_node;
 }
 
+// TODO: create edges :)
+
 Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
 {
     Cfg* cfg = initialize_graph(program, list_node_indices, nb_nodes, nb_edges);
 
     create_node(cfg, START_NODE, program->nb_instructions - 1);
-
-    int n = 30;
-
-    printf("node offset: %d\n", cfg->nodes[n].start_instruction->offset);
-    printf("nb parents node %d: %d\n", n, cfg->nodes[n].nb_parents);
-    for (int i = 0; i < cfg->nodes[n].nb_parents; i++)
-    {
-        printf("%d\n", cfg->nodes[n].parents[i]->start_instruction->offset);
-    }
-    printf("nb children node %d: %d\n", n, cfg->nodes[n].nb_children);
-    for (int i = 0; i < cfg->nodes[n].nb_children; i++)
-    {
-        printf("%d\n", cfg->nodes[n].children[i]->start_instruction->offset);
-    }
 
     return cfg;
 }
@@ -343,5 +281,7 @@ Cfg* asm_to_cfg(Asm* program) {
     
     Cfg* cfg = create_graph(program, list_node_indices, nb_nodes, nb_edges);
 
+    free(list_node_indices);
+    
     return cfg;
 }
