@@ -234,6 +234,24 @@ Node* find_node_from_start_instruction_offset(Cfg* cfg, int start_instruction_of
     return NULL;
 }
 
+void update_neighbour_nodes(Cfg* cfg, Node* current_node, int next_node_start_instruction_offset)
+{
+    Node* true_branch_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction_offset);
+    current_node->children[(current_node->child_idx)++] = true_branch_node;
+    
+    if (true_branch_node->parents == NULL)
+    {
+        true_branch_node->parents = malloc(sizeof(Node*));
+    }
+    else
+    {
+        true_branch_node->parents = realloc(true_branch_node->parents, true_branch_node->nb_parents * sizeof(*(true_branch_node->parents)) + sizeof(Node*));
+    }
+    
+    (true_branch_node->nb_parents)++;
+    true_branch_node->parents[(true_branch_node->parent_idx)++] = current_node;
+}
+
 Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_node)
 {
     Node* current_node = find_node_from_start_instruction_offset(cfg, instruction_offset);
@@ -261,69 +279,32 @@ Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_no
 
         // true branch node ------------------------------------------------
 
-        Instruction* true_branch_start_instruction = last_instruction->jump->true_branch;
-        Node* true_branch_node = find_node_from_start_instruction_offset(cfg, true_branch_start_instruction->offset);
-        current_node->children[0] = true_branch_node;
+        int true_branch_start_instruction_offset = last_instruction->jump->true_branch->offset;
         
-        if (true_branch_node->parents == NULL)
-        {
-            true_branch_node->parents = malloc(sizeof(Node*));
-        }
-        else
-        {
-            true_branch_node->parents = realloc(true_branch_node->parents, true_branch_node->nb_parents * sizeof(*(true_branch_node->parents)) + sizeof(Node*));
-        }
+        update_neighbour_nodes(cfg, current_node, true_branch_start_instruction_offset);
         
-        (true_branch_node->nb_parents)++;
-        true_branch_node->parents[(true_branch_node->parent_idx)++] = current_node;
-        
-        create_node(cfg, true_branch_start_instruction->offset, last_instruction_last_node);
+        create_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
         
         // false branch node -----------------------------------------------
         
-        Instruction* false_branch_start_instruction = last_instruction->jump->false_branch;
-        Node* false_branch_node = find_node_from_start_instruction_offset(cfg, false_branch_start_instruction->offset);
-        current_node->children[1] = false_branch_node;
+        int false_branch_start_instruction_offset = last_instruction->jump->false_branch->offset;
         
-        if (false_branch_node->parents == NULL)
-        {
-            false_branch_node->parents = malloc(sizeof(Node*));
-        }
-        else
-        {
-            false_branch_node->parents = realloc(false_branch_node->parents, false_branch_node->nb_parents * sizeof(*(false_branch_node->parents)) + sizeof(Node*));
-        }
+        update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
         
-        (false_branch_node->nb_parents)++;
-        false_branch_node->parents[(false_branch_node->parent_idx)++] = current_node;
-        
-        create_node(cfg, false_branch_start_instruction->offset, last_instruction_last_node);
+        create_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
     }
     else
     {
-        Instruction* next_node_start_instruction = last_instruction + 1;
+        int next_node_start_instruction_offset = (last_instruction + 1)->offset;
         // not last current_node
         if (last_instruction->offset != last_instruction_last_node)
         {
             current_node->nb_children = 1;
             current_node->children = malloc(current_node->nb_children * sizeof(Node*));
             
-            Node* next_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction->offset);
-            current_node->children[0] = next_node;
+            update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
             
-            if (next_node->parents == NULL)
-            {
-                next_node->parents = malloc(sizeof(Node*));
-            }
-            else
-            {
-                next_node->parents = realloc(next_node->parents, next_node->nb_parents * sizeof(*(next_node->parents)) + sizeof(Node*));
-            }
-            
-            (next_node->nb_parents)++;
-            next_node->parents[(next_node->parent_idx)++] = current_node;
-            
-            create_node(cfg, next_node_start_instruction->offset, last_instruction_last_node);
+            create_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
         }
     }
     
@@ -335,6 +316,20 @@ Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edg
     Cfg* cfg = initialize_graph(program, list_node_indices, nb_nodes, nb_edges);
 
     create_node(cfg, START_NODE, program->nb_instructions - 1);
+
+    int n = 30;
+
+    printf("node offset: %d\n", cfg->nodes[n].start_instruction->offset);
+    printf("nb parents node %d: %d\n", n, cfg->nodes[n].nb_parents);
+    for (int i = 0; i < cfg->nodes[n].nb_parents; i++)
+    {
+        printf("%d\n", cfg->nodes[n].parents[i]->start_instruction->offset);
+    }
+    printf("nb children node %d: %d\n", n, cfg->nodes[n].nb_children);
+    for (int i = 0; i < cfg->nodes[n].nb_children; i++)
+    {
+        printf("%d\n", cfg->nodes[n].children[i]->start_instruction->offset);
+    }
 
     return cfg;
 }

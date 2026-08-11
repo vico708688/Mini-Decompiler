@@ -60,12 +60,10 @@ typedef struct Edge {
 Cfg* asm_to_cfg(Asm* program);
 
 Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges);
-// void create_nodes(Asm* program, Cfg* cfg, int* list_node_indices);
-// void update_node(Cfg* cfg, Node* current_node, Instruction* next_node_start_instruction);
-void add_child(Node* current_node, Node* child);
-void add_parent(Node* current_node, Node* parent);
-void add_edge(Cfg* cfg, Node* start, Node* target);
-
+Instruction* get_instruction_from_node(Node* node, int instruction_offset);
+Node* find_node_from_start_instruction_offset(Cfg* cfg, int start_instruction_offset);
+void update_neighbour_nodes(Cfg* cfg, Node* current_node, int next_node_start_instruction_offset);
+Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_node);
 Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges);
 
 void get_info_graph(Asm* program, int** basic_node_numbers, int* nb_basic_nodes, int* nb_edges);
