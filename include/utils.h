@@ -3,7 +3,7 @@
 
 #include <regex.h>
 #include "token.h"
-#include "AST.h"
+#include "CFG.h"
 #include "graph.h"
 
 typedef struct {

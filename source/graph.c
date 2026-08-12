@@ -5,7 +5,7 @@
 #include "graph.h"
 #include "utils.h"
 #include "pretty_printer.h"
-#include "AST.h"
+#include "CFG.h"
 
 int START_NODE = 0;
 
@@ -23,26 +23,16 @@ void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
     fprintf(f, "    rankdir=TB;\n");
     fprintf(f, "    node [shape=box];\n\n");
 
-    /* nodes declaration */
-    for (int i = 0; i < cfg->node_idx; i++) {
+    for (int i = 0; i < cfg->nb_nodes; i++) {
         Node* b = &cfg->nodes[i];
         if (b != NULL) {
-            fprintf(f, "    n%d [label=node_%d];\n", b->start_instruction->offset, b->start_instruction->offset);
-        }
-    }
-
-    fprintf(f, "\n");
-
-    /* edges declaration */
-    for (int i = 0; i < cfg->edge_idx; i++) {
-        Edge *e = &cfg->edges[i];
-        if (e != NULL && e->start != NULL && e->target != NULL) {
-            fprintf(f, "    n%d -> n%d", e->start->start_instruction->offset, e->target->start_instruction->offset);
-
-            if (e->visited)
-                fprintf(f, " [color=red, penwidth=2]");
-
-            fprintf(f, ";\n");
+            fprintf(f, "    node_%d -> {", b->start_instruction->offset);
+            for (int child_idx = 0; child_idx < b->nb_children; child_idx++)
+            {
+                fprintf(f, "node_%d ", b->children[child_idx]->start_instruction->offset);
+            }
+            
+            fprintf(f, "}\n");
         }
     }
 
@@ -143,8 +133,6 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
     Node* start_node = &cfg->nodes[0];
     start_node->start_instruction = &program->instructions[list_node_indices[0]];
     start_node->nb_instructions = list_node_indices[1] - list_node_indices[0];
-    start_node->parents = NULL;
-    start_node->children = NULL;
     
     // middle nodes
     for (int node_idx = 1; node_idx < cfg->nb_nodes - 1; node_idx++)
@@ -152,16 +140,12 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
         Node* node = &cfg->nodes[node_idx];
         node->start_instruction = &program->instructions[list_node_indices[node_idx]];
         node->nb_instructions = list_node_indices[node_idx + 1] - list_node_indices[node_idx];
-        node->parents = NULL;
-        node->children = NULL;
     }
     
     // end node
     Node* end_node = &cfg->nodes[cfg->nb_nodes - 1];
     end_node->start_instruction = &program->instructions[list_node_indices[nb_nodes - 1]];
     end_node->nb_instructions = program->nb_instructions - list_node_indices[nb_nodes - 1];
-    end_node->parents = NULL;
-    end_node->children = NULL;
     
     return cfg;
 }
@@ -202,7 +186,24 @@ void update_neighbour_nodes(Cfg* cfg, Node* current_node, int next_node_start_in
     true_branch_node->parents[(true_branch_node->parent_idx)++] = current_node;
 }
 
-Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_node)
+void create_edge(Cfg* cfg, Node* start, Node* target)
+{
+    if (cfg->edge_idx >= cfg->nb_edges)
+    {
+        fprintf(stderr, "Too many edges\n");
+        exit(1);
+    }
+
+    Edge edge;
+
+    edge.visited = false;
+    edge.start = start;
+    edge.target = target;
+
+    cfg->edges[(cfg->edge_idx)++] = edge;
+}
+
+Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_instruction_last_node)
 {
     Node* current_node = find_node_from_start_instruction_offset(cfg, instruction_offset);
     if (current_node == NULL)
@@ -233,7 +234,11 @@ Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_no
         
         update_neighbour_nodes(cfg, current_node, true_branch_start_instruction_offset);
         
-        create_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
+        Node* true_node = generate_subgraph_from_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
+        if (true_node != NULL)
+        {
+            create_edge(cfg, current_node, true_node);
+        }
         
         // false branch node -----------------------------------------------
         
@@ -241,33 +246,36 @@ Node* create_node(Cfg* cfg, int instruction_offset, int last_instruction_last_no
         
         update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
         
-        create_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
-    }
-    else
-    {
-        // not last current_node
-        if (last_instruction->offset != last_instruction_last_node)
+        Node* false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
+        if (false_node != NULL)
         {
-            int next_node_start_instruction_offset = (last_instruction + 1)->offset;
-            current_node->nb_children = 1;
-            current_node->children = malloc(current_node->nb_children * sizeof(Node*));
-            
-            update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
-            
-            create_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
+            create_edge(cfg, current_node, false_node);
+        }
+    }
+    // not last current_node
+    else if (last_instruction->offset != last_instruction_last_node)
+    {
+        int next_node_start_instruction_offset = (last_instruction + 1)->offset;
+        current_node->nb_children = 1;
+        current_node->children = malloc(current_node->nb_children * sizeof(Node*));
+        
+        update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
+        
+        Node* next_node = generate_subgraph_from_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
+        if (next_node != NULL)
+        {
+            create_edge(cfg, current_node, next_node);
         }
     }
     
     return current_node;
 }
 
-// TODO: create edges :)
-
 Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
 {
     Cfg* cfg = initialize_graph(program, list_node_indices, nb_nodes, nb_edges);
 
-    create_node(cfg, START_NODE, program->nb_instructions - 1);
+    generate_subgraph_from_node(cfg, START_NODE, program->nb_instructions - 1);
 
     return cfg;
 }

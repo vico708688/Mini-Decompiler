@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "AST.h"
+#include "CFG.h"
 #include "pretty_printer.h"
 
 void visit_program(Visitor* v, Asm* program)

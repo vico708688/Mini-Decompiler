@@ -1,7 +1,7 @@
 #ifndef H_PRETTY_PRINTER
 #define H_PRETTY_PRINTER
 
-#include "AST.h"
+#include "CFG.h"
 
 typedef struct Visitor Visitor;
 

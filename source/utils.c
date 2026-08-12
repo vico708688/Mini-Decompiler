@@ -5,7 +5,7 @@
 
 #include "utils.h"
 #include "token.h"
-#include "AST.h"
+#include "CFG.h"
 #include "graph.h"
 
 char* read_asm_file(char* path)
@@ -282,10 +282,6 @@ void free_cfg(Cfg* cfg)
 	}
 	free(cfg->nodes);
 	free(cfg->edges);
-	// for (int i = 0; i < cfg->nb_edges; i++)
-	// {
-	// 	free_node(&cfg->edges[i]);
-	// }
 	free(cfg);
 }
 

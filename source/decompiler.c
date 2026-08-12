@@ -62,7 +62,7 @@ int decompile(char* file_path) {
 
     Cfg* cfg = asm_to_cfg(program);
 
-    // graph_to_graphviz(cfg, "graph.dot", "graph.png");
+    graph_to_graphviz(cfg, "graph.dot", "graph.png");
 
     // simplify_cfg(cfg);
 

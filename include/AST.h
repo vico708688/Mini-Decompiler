@@ -1,261 +1,74 @@
 #ifndef H_AST
 #define H_AST
 
-#include <stdbool.h>
-// #include "graph.h"
-// #include "lifter.h"
+#include "CFG.h"
 
-typedef struct Operand Operand;
-typedef struct Operation Operation;
-typedef struct ExprReg ExprReg;
-typedef struct Instruction Instruction;
-
-// ------------------- KINDS ----------------------
-typedef enum InstructionKind
+// -------------------------------------- AsmCfg structure -----------------------------------------
+typedef enum LoopKind
 {
-    INSTR_LOAD,
-    INSTR_STORE,
-    INSTR_OP,
-    INSTR_CMP,
-    INSTR_JMP,
-    INSTR_CALL,
-} InstructionKind;
+    LOOP_WHILE,
+    LOOP_DOWHILE,
+    LOOP_ENDLESS
+} LoopType;
 
-typedef enum AssignmentKind
+typedef enum AstNodeKind
 {
-    ASSIGN_REG,
-    ASSIGN_MEM,
-    ASSIGN_INT
-} AssignmentKind;
+    AST_NODE,
+    AST_SEQUENCE,
+    AST_IF,
+    AST_SWITCH,
+    AST_LOOP,
+} AstNodeKind;
 
-typedef enum ConditionKind
+typedef struct ASTSequence
 {
-    COND_LESS,
-    COND_ABOVE,
-    COND_EQ,
-} ConditionKind;
+    Node* nodes;
+} ASTSequence;
 
-typedef enum OperationKind
+typedef struct ASTIf
 {
-    OP_ADD,
-    OP_SUB,
-    OP_XOR,
-    OP_AND,
-    OP_SHL,
-    OP_SHR,
-    OP_OR,
-    OP_MOD,
-    OP_EQ,
-} OperationKind;
+    Condition* cond;
+    Node* true_branch;
+    Node* false_branch;
+} ASTIfCondition;
 
-typedef enum OperandKind
+typedef struct ASTLoop
 {
-    OPERAND_INT,
-    OPERAND_REG,
-    OPERAND_MEM
-} OperandKind;
+    LoopKind kind;
+    Condition* cond;
+    Node* body;
+} ASTLoop;
 
-typedef enum DstKind
+typedef struct ASTCase
 {
-    DST_REG,
-    DST_MEM,
-    DST_FLAG
-} DstKind;
+    int cond;
+    Node* node;
+} ASTCase;
 
-typedef enum SrcKind
+typedef struct ASTSwitch
 {
-    SRC_INT,
-    SRC_REG,
-    SRC_MEM,
-    SRC_FLAG
-} SrcKind;
+    int var;
+    ASTCase* cases;
+    Node* default_node;
+} ASTSwitch;
 
-
-// ------------------- BASIC STRUCTS ----------------------
-typedef struct ExprInt
+typedef struct ASTNode
 {
-    int value;
-} ExprInt;
+    AstNodeKind kind;
 
-typedef struct ExprReg
-{
-    Operand* index;
-} ExprReg;
-
-typedef struct ExprMem
-{
-    Operand* index;
-} ExprMem;
-
-typedef struct ExprFlag
-{
-    int index;
-} ExprFlag;
-
-
-
-// ------------------- BASIC BLOCKS OF INSTRUCTION ----------------------
-typedef struct Dst
-{
-    DstKind kind;
-    
     union
     {
-        ExprReg* reg;
-        ExprMem* mem;
-        ExprFlag* flag;
+        Node* node;
+        ASTSequence* sequence;
+        ASTIf* ifcondition;
+        ASTSwitch* switchcondition;
+        ASTLoop* loop;
     };
-} Dst;
+} ASTNode;
 
-typedef struct Src
+typedef struct Ast
 {
-    SrcKind kind;
-    
-    union
-    {
-        ExprInt* integer;
-        ExprReg* reg;
-        ExprMem* mem;
-        ExprFlag* flag;
-    };
-} Src;
-
-typedef struct Operand
-{
-    OperandKind kind;
-    
-    union
-    {
-        ExprInt* integer;
-        ExprReg* reg;
-        ExprMem* mem;
-    };
-} Operand;
-
-typedef struct Condition
-{
-    Operation* lcond;
-    ConditionKind kind;
-    Operation* rcond;
-} Condition;
-
-// ------------------- BASIC IR INSTRUCTIONS ----------------------
-typedef struct Operation
-{
-    Dst* dst;
-    OperationKind operator;
-    Src* src;
-} Operation;
-
-typedef struct Load
-{
-    Dst* dst;
-    Src* src;
-} Load;
-
-typedef struct Store
-{
-    Dst* dst;
-    Src* src;
-} Store;
-
-typedef struct Comparison
-{
-    Dst* dst;
-    Src* src;
-} Comparison;
-
-typedef struct Call
-{
-    char* name;
-} Call;
-
-typedef struct Jump
-{
-    Condition* condition;
-    bool jump_resolved; // TODO: change into 2 fields of int (true_offset and false_offset) -> cleaner
-    Instruction* true_branch;
-    Instruction* false_branch;
-} Jump;
-
-
-
-// ------------------- INSTRUCTION ----------------------
-/**
- * Load(dst, src)
- * Store(dst, src)
- * 
- * Add  (dst, src) -
- * Sub  (dst, src) |
- * Mul  (dst, src) |
- * Div  (dst, src) |
- * And  (dst, src) | ---> Operation(dst, src)
- * Or   (dst, src) |
- * Xor  (dst, src) -
- * 
- * Cmp  (dst, src) --, to add in jump
- *                   v
- * Jump(cond, true, false)
- */
-typedef struct Instruction
-{
-    InstructionKind kind;
-    int offset;
-
-    union {
-        Load* load;
-        Store* store;
-        Operation* operation;
-        Comparison* comparison;
-        Jump* jump;
-        Call* call;
-    };
-} Instruction;
-
-typedef struct Asm
-{
-    Instruction* instructions;
-    int nb_instructions;
-    int instr_idx;
-} Asm;
-
-
-// // -------------------------------------- AsmCfg structure -----------------------------------------
-// typedef struct {
-//     Stmt* decl;
-// } AsmCfg;
-
-// typedef enum LoopType {
-//     LOOP_WHILE,
-//     LOOP_DOWHILE,
-//     LOOP_ENDLESS
-// } LoopType;
-
-// typedef struct Sequence {
-//     Node* nodes;
-// } Sequence;
-
-// typedef struct If {
-//     ExprOperator cond;
-//     Node* true_branch;
-//     Node* false_branch;
-// } If;
-
-// typedef struct Loop {
-//     LoopType kind;
-//     ExprOperator cond;
-//     Node* body;
-// } Loop;
-
-// typedef struct Case {
-//     int cond;
-//     Node* node;
-// } Case;
-
-// typedef struct Switch {
-//     int var;
-//     Case* cases;
-//     Node* default_node;
-// } Switch;
+    ASTNode* astnode;
+} Ast;
 
 #endif
