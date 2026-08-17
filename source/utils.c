@@ -270,8 +270,9 @@ void free_asm(Asm* program)
 void free_node(Node* node)
 {
 	// instructions already free'd
-	free(node->children);
-	free(node->parents);
+	free(node->successors);
+	free(node->predecessors);
+	free(node->dominator_frontier);
 }
 
 void free_edge(Edge* edge)

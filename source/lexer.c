@@ -180,8 +180,8 @@ void advance(char** text, int nb, int* nb_instructions) {
 TokenList* lexer(char** text, int* nb_instructions) {
 	int lenToken = 0;
 
-	// TODO: why do i need to initiialize to 1 (off-by-one error)
-	*nb_instructions = 1;
+	// TODO: why do i need to initialize to 1 (off-by-one error)
+	*nb_instructions = 0;
 	regexList regexes;
 	init_regexes(&regexes);
 

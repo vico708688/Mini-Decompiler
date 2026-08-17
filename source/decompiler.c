@@ -67,7 +67,8 @@ int decompile(char* file_path) {
 
     graph_to_graphviz(cfg, "graph.dot", "graph.png");
     
-    dominator_tree(cfg);
+    // compute_idom(cfg);
+    compute_dominance_frontier(cfg);
     
     // cfg_to_SSA_form(cfg);
 

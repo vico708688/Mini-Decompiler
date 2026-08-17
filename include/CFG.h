@@ -40,17 +40,21 @@ typedef struct Node {
     Instruction* start_instruction; // instructions contiguous in memory
     int nb_instructions;
 
-    Node** children; // linked list (0-2 elements) -> change in a union of jump or simple node ?
-    int nb_children;
-    int child_idx;
+    Node** successors; // linked list (0-2 elements) -> change in a union of jump or simple node ?
+    int nb_successors;
+    int successor_idx;
     
-    Node** parents; // linked list (0-n elements)
-    int nb_parents;
-    int parent_idx;
+    Node** predecessors; // linked list (0-n elements)
+    int nb_predecessors;
+    int predecessor_idx;
 
     Node* dominator;
     int post_order_number;
     bool processed;
+
+    Node** dominator_frontier;
+    int nb_dominators;
+    int dominator_idx;
 
     bool visited;
 } Node;

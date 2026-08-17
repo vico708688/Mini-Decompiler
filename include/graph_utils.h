@@ -11,6 +11,10 @@ typedef struct List
 
 void graph_to_graphviz(Cfg *graph, const char *dot_file, const char *png_file);
 
-void dominator_tree(Cfg* cfg);
+void compute_dominance_frontier(Cfg* cfg);
+void compute_idom(Cfg* cfg);
+Node* intersect(Node* b1, Node* b2);
+void reverse_post_order(Cfg* cfg, Node*** list_nodes);
+void DFS(Cfg* cfg, Node* node, List* list_nodes);
 
 #endif

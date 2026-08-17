@@ -136,19 +136,19 @@ Node* find_node_from_start_instruction_offset(Cfg* cfg, int start_instruction_of
 void update_neighbour_nodes(Cfg* cfg, Node* current_node, int next_node_start_instruction_offset)
 {
     Node* true_branch_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction_offset);
-    current_node->children[(current_node->child_idx)++] = true_branch_node;
+    current_node->successors[(current_node->successor_idx)++] = true_branch_node;
     
-    if (true_branch_node->parents == NULL)
+    if (true_branch_node->predecessors == NULL)
     {
-        true_branch_node->parents = malloc(sizeof(Node*));
+        true_branch_node->predecessors = malloc(sizeof(Node*));
     }
     else
     {
-        true_branch_node->parents = realloc(true_branch_node->parents, true_branch_node->nb_parents * sizeof(*(true_branch_node->parents)) + sizeof(Node*));
+        true_branch_node->predecessors = realloc(true_branch_node->predecessors, (true_branch_node->nb_predecessors + 1) * sizeof(Node*));
     }
     
-    (true_branch_node->nb_parents)++;
-    true_branch_node->parents[(true_branch_node->parent_idx)++] = current_node;
+    (true_branch_node->nb_predecessors)++;
+    true_branch_node->predecessors[(true_branch_node->predecessor_idx)++] = current_node;
 }
 
 void create_edge(Cfg* cfg, Node* start, Node* target)
@@ -194,8 +194,8 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
     // here, we suppose that the program cannot end with a jmp instruction (strong supposition but hey...)
     if (last_instruction->kind == INSTR_JMP)
     {
-        current_node->nb_children = 1;
-        current_node->children = malloc(current_node->nb_children * sizeof(Node*));
+        current_node->nb_successors = 1;
+        current_node->successors = malloc(current_node->nb_successors * sizeof(Node*));
         // true branch node ------------------------------------------------
         
         int true_branch_start_instruction_offset = last_instruction->jump->true_branch->offset;
@@ -212,8 +212,8 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
         
         if (last_instruction->jump->condition->kind != COND_TRUE)
         {
-            (current_node->nb_children)++;
-            current_node->children = realloc(current_node->children, current_node->nb_children * sizeof(Node*));
+            (current_node->nb_successors)++;
+            current_node->successors = realloc(current_node->successors, current_node->nb_successors * sizeof(Node*));
             int false_branch_start_instruction_offset = last_instruction->jump->false_branch->offset;
             
             update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
@@ -228,8 +228,8 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
     // not last current_node
     else if (last_instruction->offset != last_instruction_last_node)
     {
-        current_node->nb_children = 1;
-        current_node->children = malloc(current_node->nb_children * sizeof(Node*));
+        current_node->nb_successors = 1;
+        current_node->successors = malloc(current_node->nb_successors * sizeof(Node*));
         int next_node_start_instruction_offset = (last_instruction + 1)->offset;
         
         update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);

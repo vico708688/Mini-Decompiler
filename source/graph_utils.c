@@ -28,9 +28,9 @@ void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
         Node* b = &cfg->nodes[i];
         if (b != NULL) {
             fprintf(f, "    node_%d -> {", b->start_instruction->offset);
-            for (int child_idx = 0; child_idx < b->nb_children; child_idx++)
+            for (int successor_idx = 0; successor_idx < b->nb_successors; successor_idx++)
             {
-                fprintf(f, "node_%d ", b->children[child_idx]->start_instruction->offset);
+                fprintf(f, "node_%d ", b->successors[successor_idx]->start_instruction->offset);
             }
             fprintf(f, "}\n");
 
@@ -58,11 +58,14 @@ void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
     printf("Image generated in %s\n", png_file);
 }
 
-void DFS(Cfg* cfg, Node* node, List* list_nodes) {
+void DFS(Cfg* cfg, Node* node, List* list_nodes)
+{
     node->visited = true;
-    for (int i = 0; i < node->nb_children; i++) {
-        Node* next_node = node->children[i];
-        if (next_node->visited == false) {
+    for (int i = 0; i < node->nb_successors; i++)
+    {
+        Node* next_node = node->successors[i];
+        if (next_node->visited == false)
+        {
             DFS(cfg, next_node, list_nodes);
             next_node->post_order_number = list_nodes->index;
             (*list_nodes->nodes)[(list_nodes->index)++] = next_node;
@@ -79,6 +82,7 @@ void reverse_post_order(Cfg* cfg, Node*** list_nodes)
     List list;
     list.index = 0;
     list.nodes = &temp;
+    
     /* Depth First Search */
     DFS(cfg, cfg->header, &list);
     temp[cfg->nb_nodes - 1] = cfg->header;
@@ -106,16 +110,13 @@ Node* intersect(Node* b1, Node* b2)
     
     while (finger1->post_order_number != finger2->post_order_number)
     {
-        printf("in\n");
         while (finger1->post_order_number < finger2->post_order_number)
         {
             finger1 = finger1->dominator;
-            printf("dominator: %d\n", finger1->start_instruction->offset);
         }
         while (finger1->post_order_number > finger2->post_order_number)
         {
             finger2 = finger2->dominator;
-            printf("dominator: %d\n", finger2->start_instruction->offset);
         }
     }
     
@@ -128,19 +129,14 @@ Node* intersect(Node* b1, Node* b2)
  * idom(b): immediate dominator of b, "dominator closest to b"
  * 
  */
-void dominator_tree(Cfg* cfg)
+void compute_idom(Cfg* cfg)
 {
     /* reverse postorder list computation */
     Node** list_post_order = malloc(cfg->nb_nodes * sizeof(Node*));
     reverse_post_order(cfg, &list_post_order);
 
-    for (int i = 0; i < cfg->nb_nodes; i++)
-    {
-        printf("node %d, nb = %d\n", list_post_order[i]->start_instruction->offset, list_post_order[i]->post_order_number);
-    }
-    printf("\n");
-    exit(1);
     cfg->header->dominator = cfg->header;
+    cfg->header->processed = true;
     
     bool changed = true;
     while (changed)
@@ -150,23 +146,20 @@ void dominator_tree(Cfg* cfg)
         for (int i = 1; i < cfg->nb_nodes; i++)
         {
             Node* b = list_post_order[i];
-            printf("current node = %d\n", b->start_instruction->offset);
             Node* new_idom;
-            /* first processed predecessor of b */
-            // not sure
-            for (int predecessor_idx = 0; predecessor_idx < b->nb_parents; predecessor_idx++)
+            for (int predecessor_idx = 0; predecessor_idx < b->nb_predecessors; predecessor_idx++)
             {
-                Node* predecessor = b->parents[predecessor_idx];
+                Node* predecessor = b->predecessors[predecessor_idx];
                 if (predecessor->processed)
                 {
-                    new_idom = b->parents[i];
-                    printf("immediate dominator (1st cycle): %d\n", new_idom->start_instruction->offset);
+                    new_idom = b->predecessors[predecessor_idx];
+                    break;
                 }
             }
             
-            for (int predecessor_idx = 0; predecessor_idx < b->nb_parents; predecessor_idx++)
+            for (int predecessor_idx = 0; predecessor_idx < b->nb_predecessors; predecessor_idx++)
             {
-                Node* p = b->parents[predecessor_idx];
+                Node* p = b->predecessors[predecessor_idx];
                 if (p->dominator != NULL)
                 {
                     new_idom = intersect(p, new_idom);
@@ -175,14 +168,87 @@ void dominator_tree(Cfg* cfg)
 
             if (b->dominator != new_idom)
             {
-                printf("dominator of node: %d: %d\n", b->start_instruction->offset, new_idom->start_instruction->offset);
                 b->dominator = new_idom;
                 b->processed = true;
                 changed = true;
             }
         }
-        exit(1);
+
+        // printf("\niteration:\n\n");
+        // for (int i = 0; i < cfg->nb_nodes; i++)
+        // {
+        //     printf("node %d: dom = %d\n", cfg->nodes[i].start_instruction->offset, cfg->nodes[i].dominator->start_instruction->offset);
+        // }
     }
     
     free(list_post_order);
+}
+
+bool set_contains(Node* b, Node* set)
+{
+    for (int i = 0; i < set->nb_dominators; i++)
+    {
+        if (b == set->dominator_frontier[i])
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void add_to_set(Node* b, Node* runner)
+{
+    if (set_contains(b, runner))
+    {
+        return;
+    }
+    
+    if (runner->dominator_frontier == NULL)
+    {
+        runner->dominator_frontier = malloc(sizeof(Node*));
+    }
+    else
+    {
+        runner->dominator_frontier = realloc(runner->dominator_frontier, (runner->nb_dominators + 1) * sizeof(Node*));
+    }
+    (runner->nb_dominators)++;
+    runner->dominator_frontier[(runner->dominator_idx)++] = b;
+}
+
+void compute_dominance_frontier(Cfg* cfg)
+{
+    compute_idom(cfg);
+
+    for (int node_idx = 0; node_idx < cfg->nb_nodes; node_idx++)
+    {
+        Node* b = &cfg->nodes[node_idx];
+        if (b->nb_predecessors >= 2)
+        {
+            for (int predecessor_idx = 0; predecessor_idx < b->nb_predecessors; predecessor_idx++)
+            {
+                Node* runner = b->predecessors[predecessor_idx];
+                while (runner != b->dominator)
+                {
+                    /* add b to runner's dominance frontier set */
+                    add_to_set(b, runner);
+                    
+                    runner = runner->dominator;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < cfg->nb_nodes; i++)
+    {
+        Node* node = &cfg->nodes[i];
+        printf("Dominance frontier for node %d:\n", node->start_instruction->offset);
+        for (int dom_idx = 0; dom_idx < node->nb_dominators; dom_idx++)
+        {
+            printf("%d ", node->dominator_frontier[dom_idx]->start_instruction->offset);
+        }
+        printf("\n");
+        
+    }
+    
 }
