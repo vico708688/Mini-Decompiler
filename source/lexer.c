@@ -88,6 +88,10 @@ bool canAddKeywordToken(TokenList *tokenList, union TokenValue value)
 		addToken(tokenList, MN_JL, value, true);
 		return true;
 	}
+	else if (strcmp(value.value_str, "jmp") == 0) {
+		addToken(tokenList, MN_JMP, value, true);
+		return true;
+	}
 	else if (strcmp(value.value_str, "jif") == 0) {
 		addToken(tokenList, MN_JIF, value, true);
 		return true;
@@ -175,7 +179,9 @@ void advance(char** text, int nb, int* nb_instructions) {
 
 TokenList* lexer(char** text, int* nb_instructions) {
 	int lenToken = 0;
-	*nb_instructions = 0;
+
+	// TODO: why do i need to initiialize to 1 (off-by-one error)
+	*nb_instructions = 1;
 	regexList regexes;
 	init_regexes(&regexes);
 

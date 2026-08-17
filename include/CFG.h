@@ -25,6 +25,8 @@ typedef struct Edge Edge;
  *  - unlabeled
  */
 typedef struct Cfg {
+    Node* header;
+
     Node* nodes;
     int nb_nodes;
     int node_idx;
@@ -45,6 +47,10 @@ typedef struct Node {
     Node** parents; // linked list (0-n elements)
     int nb_parents;
     int parent_idx;
+
+    Node* dominator;
+    int post_order_number;
+    bool processed;
 
     bool visited;
 } Node;

@@ -27,7 +27,7 @@ typedef struct ASTSequence
 
 typedef struct ASTIf
 {
-    Condition* cond;
+    ASMCondition* cond;
     Node* true_branch;
     Node* false_branch;
 } ASTIfCondition;
@@ -35,7 +35,7 @@ typedef struct ASTIf
 typedef struct ASTLoop
 {
     LoopKind kind;
-    Condition* cond;
+    ASMCondition* cond;
     Node* body;
 } ASTLoop;
 

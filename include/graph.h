@@ -18,6 +18,4 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
 void get_info_graph(Asm* program, int** basic_node_numbers, int* nb_basic_nodes, int* nb_edges);
 int compare_ints(const void* a, const void* b);
 
-void graph_to_graphviz(Cfg *graph, const char *dot_file, const char *png_file);
-
 #endif

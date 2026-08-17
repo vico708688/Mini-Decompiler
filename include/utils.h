@@ -13,20 +13,20 @@ typedef struct {
 
 void free_asm(Asm* program);
 void free_instruction(Instruction* instruction);
-void free_jump(Jump* jump);
-void free_call(Call* call);
-void free_operation(Operation* operation);
-void free_comparison(Comparison* comparison);
-void free_store(Store* store);
-void free_load(Load* load);
-void free_dst(Dst* dst);
-void free_src(Src* src);
-void free_flag(ExprFlag* flag);
-void free_mem(ExprMem* mem);
-void free_reg(ExprReg* reg);
-void free_int(ExprInt* integer);
-void free_operand(Operand* operand);
-void free_condition(Condition* condition);
+void free_jump(ASMJump* jump);
+void free_call(ASMCall* call);
+void free_operation(ASMOperation* operation);
+void free_comparison(ASMComparison* comparison);
+void free_store(ASMStore* store);
+void free_load(ASMLoad* load);
+void free_dst(ASMDst* dst);
+void free_src(ASMSrc* src);
+void free_flag(ASMFlag* flag);
+void free_mem(ASMMem* mem);
+void free_reg(ASMReg* reg);
+void free_int(ASMInt* integer);
+void free_operand(ASMOperand* operand);
+void free_condition(ASMCondition* condition);
 
 void free_cfg(Cfg* cfg);
 void free_node(Node* node);

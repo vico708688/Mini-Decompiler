@@ -9,6 +9,11 @@
 #include "parser.h"
 #include "pretty_printer.h"
 #include "graph.h"
+#include "SSA.h"
+
+
+// TODO: delete
+#include "graph_utils.h"
 
 /**
  * It assumes as input an assembler code file from a disassembler that 
@@ -28,7 +33,7 @@
                CFG                          <- done
                 │
                 v
-            SSA (often)                     <- skipped
+            SSA (often)                     <- TODO
                 │
                 v
           Optimisations                     <- skipped
@@ -56,13 +61,15 @@ int decompile(char* file_path) {
     Asm* program = parser(tokenList, nb_instructions);
 
     // Visitor visitor;
-
-    // visit_program(&visitor, program);
+    // visit_program(&visitor, program, stdout);
     
-
     Cfg* cfg = asm_to_cfg(program);
 
     graph_to_graphviz(cfg, "graph.dot", "graph.png");
+    
+    dominator_tree(cfg);
+    
+    // cfg_to_SSA_form(cfg);
 
     // simplify_cfg(cfg);
 
@@ -72,7 +79,6 @@ int decompile(char* file_path) {
     free_cfg(cfg);
     free_tokens(tokenList);
 	free(backup_text);
-
 
     return 0;
 }

@@ -4,48 +4,10 @@
 
 #include "graph.h"
 #include "utils.h"
-#include "pretty_printer.h"
 #include "CFG.h"
 
-int START_NODE = 0;
-
-void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
-    if (cfg == NULL)
-        return;
-
-    FILE *f = fopen(dot_file, "w");
-    if (f == NULL) {
-        fprintf(stderr, "fopen() failed\n");
-        exit(1);
-    }
-
-    fprintf(f, "digraph G {\n");
-    fprintf(f, "    rankdir=TB;\n");
-    fprintf(f, "    node [shape=box];\n\n");
-
-    for (int i = 0; i < cfg->nb_nodes; i++) {
-        Node* b = &cfg->nodes[i];
-        if (b != NULL) {
-            fprintf(f, "    node_%d -> {", b->start_instruction->offset);
-            for (int child_idx = 0; child_idx < b->nb_children; child_idx++)
-            {
-                fprintf(f, "node_%d ", b->children[child_idx]->start_instruction->offset);
-            }
-            
-            fprintf(f, "}\n");
-        }
-    }
-
-    fprintf(f, "}\n");
-    fclose(f);
-
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "dot -Tpng %s -o %s", dot_file, png_file);
-    system(cmd);
-
-    printf("Graphviz written in %s\n", dot_file);
-    printf("Image generated in %s\n", png_file);
-}
+// TODO: change it to graph header
+const int START_NODE = 0;
 
 int compare_ints(const void* a, const void* b)
 {
@@ -72,7 +34,10 @@ void get_info_graph(Asm* program, int** list_node_indices, int* nb_basic_nodes, 
         if (instruction.kind == INSTR_JMP)
         {
             (*list_node_indices)[(*nb_edges)++] = instruction.jump->true_branch->offset;
-            (*list_node_indices)[(*nb_edges)++] = instruction.jump->false_branch->offset;
+            if (instruction.jump->condition->kind != COND_TRUE)
+            {
+                (*list_node_indices)[(*nb_edges)++] = instruction.jump->false_branch->offset;
+            }
         }
     }
     
@@ -119,7 +84,7 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
         fprintf(stderr, "malloc() Node failed\n");
         exit(1);
     }
-    
+
     cfg->nb_edges = nb_edges;
     cfg->edge_idx = 0;
     cfg->edges = calloc(cfg->nb_edges, sizeof(Edge));
@@ -212,24 +177,27 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
         exit(1);
     }
 
-    Instruction* last_instruction = get_instruction_from_node(current_node, current_node->nb_instructions - 1);
-    
     if (current_node->visited == true)
     {
         return NULL;
     }
+    
+    Instruction* last_instruction = get_instruction_from_node(current_node, current_node->nb_instructions - 1);
+    if (instruction_offset == START_NODE)
+    {
+        cfg->header = current_node;
+    }
 
     // current_node creation
     current_node->visited = true;
-
+    
     // here, we suppose that the program cannot end with a jmp instruction (strong supposition but hey...)
     if (last_instruction->kind == INSTR_JMP)
     {
-        current_node->nb_children = 2;
+        current_node->nb_children = 1;
         current_node->children = malloc(current_node->nb_children * sizeof(Node*));
-
         // true branch node ------------------------------------------------
-
+        
         int true_branch_start_instruction_offset = last_instruction->jump->true_branch->offset;
         
         update_neighbour_nodes(cfg, current_node, true_branch_start_instruction_offset);
@@ -242,22 +210,27 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
         
         // false branch node -----------------------------------------------
         
-        int false_branch_start_instruction_offset = last_instruction->jump->false_branch->offset;
-        
-        update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
-        
-        Node* false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
-        if (false_node != NULL)
+        if (last_instruction->jump->condition->kind != COND_TRUE)
         {
-            create_edge(cfg, current_node, false_node);
+            (current_node->nb_children)++;
+            current_node->children = realloc(current_node->children, current_node->nb_children * sizeof(Node*));
+            int false_branch_start_instruction_offset = last_instruction->jump->false_branch->offset;
+            
+            update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
+            
+            Node* false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
+            if (false_node != NULL)
+            {
+                create_edge(cfg, current_node, false_node);
+            }
         }
     }
     // not last current_node
     else if (last_instruction->offset != last_instruction_last_node)
     {
-        int next_node_start_instruction_offset = (last_instruction + 1)->offset;
         current_node->nb_children = 1;
         current_node->children = malloc(current_node->nb_children * sizeof(Node*));
+        int next_node_start_instruction_offset = (last_instruction + 1)->offset;
         
         update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
         
@@ -276,6 +249,13 @@ Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edg
     Cfg* cfg = initialize_graph(program, list_node_indices, nb_nodes, nb_edges);
 
     generate_subgraph_from_node(cfg, START_NODE, program->nb_instructions - 1);
+
+    /* reset each node to unvisited state */
+    for (int i = 0; i < cfg->nb_nodes; i++)
+    {
+        cfg->nodes[i].visited = false;
+    }
+    
 
     return cfg;
 }

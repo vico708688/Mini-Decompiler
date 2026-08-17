@@ -64,7 +64,7 @@ void free_tokens(TokenList* tokenList)
 	free(tokenList);
 }
 
-void free_operand(Operand* operand)
+void free_operand(ASMOperand* operand)
 {
 	switch (operand->kind)
 	{
@@ -86,29 +86,29 @@ void free_operand(Operand* operand)
 	free(operand);
 }
 
-void free_int(ExprInt* integer)
+void free_int(ASMInt* integer)
 {
 	free(integer);
 }
 
-void free_reg(ExprReg* reg)
+void free_reg(ASMReg* reg)
 {
 	free_operand(reg->index);
 	free(reg);
 }
 
-void free_mem(ExprMem* mem)
+void free_mem(ASMMem* mem)
 {
 	free_operand(mem->index);
 	free(mem);
 }
 
-void free_flag(ExprFlag* flag)
+void free_flag(ASMFlag* flag)
 {
 	free(flag);
 }
 
-void free_src(Src* src)
+void free_src(ASMSrc* src)
 {
 	switch (src->kind)
 	{
@@ -134,7 +134,7 @@ void free_src(Src* src)
 	free(src);
 }
 
-void free_dst(Dst* dst)
+void free_dst(ASMDst* dst)
 {
 	switch (dst->kind)
 	{
@@ -156,54 +156,60 @@ void free_dst(Dst* dst)
 	free(dst);
 }
 
-void free_load(Load* load)
+void free_load(ASMLoad* load)
 {
 	free_dst(load->dst);
 	free_src(load->src);
 	free(load);
 }
 
-void free_store(Store* store)
+void free_store(ASMStore* store)
 {
 	free_dst(store->dst);
 	free_src(store->src);
 	free(store);
 }
 
-void free_comparison(Comparison* comparison)
+void free_comparison(ASMComparison* comparison)
 {
 	free_dst(comparison->dst);
 	free_src(comparison->src);
 	free(comparison);
 }
 
-void free_operation(Operation* operation)
+void free_operation(ASMOperation* operation)
 {
 	free_dst(operation->dst);
 	free_src(operation->src);
 	free(operation);
 }
 
-void free_call(Call* call)
+void free_call(ASMCall* call)
 {
 	free(call->name);
 	free(call);
 }
 
-void free_jump(Jump* jump)
+void free_jump(ASMJump* jump)
 {
-	if (jump->condition)
-        free_condition(jump->condition);
-
-    if (!jump->jump_resolved)
+	if (!jump->jump_resolved)
     {
-        free(jump->true_branch);
-        free(jump->false_branch);
+		free(jump->true_branch);
+		if (jump->condition->kind != COND_TRUE)
+		{
+			free(jump->false_branch);
+		}
     }
+
+	if (jump->condition)
+	{
+		free_condition(jump->condition);
+	}
+	
 	free(jump);
 }
 
-void free_condition(Condition* condition)
+void free_condition(ASMCondition* condition)
 {
 	if (condition->lcond != NULL)
 	{

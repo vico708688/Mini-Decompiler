@@ -95,13 +95,15 @@ Asm* parse_asm(TokenList* tokenList, int nb_instructions)
                 instr.jump->jump_resolved = true;
 
                 int offset_true_branch = instr.jump->true_branch->offset;
-                int offset_false_branch = instr.jump->false_branch->offset;
-                
                 free(instr.jump->true_branch);
-                free(instr.jump->false_branch);
-
                 instr.jump->true_branch = &(program->instructions[offset_true_branch]);
-                instr.jump->false_branch = &(program->instructions[offset_false_branch]);
+                
+                if (instr.jump->condition->kind != COND_TRUE)
+                {
+                    int offset_false_branch = instr.jump->false_branch->offset;
+                    free(instr.jump->false_branch);
+                    instr.jump->false_branch = &(program->instructions[offset_false_branch]);
+                }
 
                 // TODO: fuse cmp in jmp condition
             }
@@ -170,6 +172,7 @@ Instruction parse_instruction(TokenList* tokenList, int offset)
         {MN_JA, parse_jmp},
         {MN_JE, parse_jmp},
         {MN_JL, parse_jmp},
+        {MN_JMP, parse_jmp},
     };
     
     ParseFunc parse = find_parsing_instruction(nextToken.kind, parser_table);
@@ -181,7 +184,6 @@ Instruction parse_instruction(TokenList* tokenList, int offset)
         if (parser_jmp != NULL)
         {
             instruction = parser_jmp(tokenList, offset);
-            // printf("jmp addr: %d, next addr: %d\n", instruction.jump->true_branch->offset, instruction.jump->false_branch->offset);
         }
         else
         {
@@ -206,13 +208,13 @@ Instruction parse_instruction(TokenList* tokenList, int offset)
     return instruction;
 }
 
-Operand* parse_operand(TokenList* tokenList)
+ASMOperand* parse_operand(TokenList* tokenList)
 {
     // printf("parsing operand\n");
-    Operand* operand = malloc(sizeof(Operand));
+    ASMOperand* operand = malloc(sizeof(ASMOperand));
     if (operand == NULL)
     {
-        fprintf(stderr, "malloc() Operand failed\n");
+        fprintf(stderr, "malloc() ASMOperand failed\n");
         exit(1);
     }
     
@@ -233,7 +235,7 @@ Operand* parse_operand(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        operand->reg = malloc(sizeof(ExprReg));
+        operand->reg = malloc(sizeof(ASMReg));
 
         operand->reg->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -246,7 +248,7 @@ Operand* parse_operand(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        operand->mem = malloc(sizeof(ExprMem));
+        operand->mem = malloc(sizeof(ASMMem));
 
         operand->mem->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -260,12 +262,12 @@ Operand* parse_operand(TokenList* tokenList)
     return operand;
 }
 
-ExprFlag* parse_flag(TokenList* tokenList)
+ASMFlag* parse_flag(TokenList* tokenList)
 {
-    ExprFlag* flag = malloc(sizeof(ExprFlag));
+    ASMFlag* flag = malloc(sizeof(ASMFlag));
     if (flag == NULL)
     {
-        fprintf(stderr, "malloc() ExprFlag failed\n");
+        fprintf(stderr, "malloc() ASMFlag failed\n");
         exit(1);
     }
 
@@ -275,13 +277,13 @@ ExprFlag* parse_flag(TokenList* tokenList)
     return flag;
 }
 
-ExprInt* parse_int(TokenList* tokenList)
+ASMInt* parse_int(TokenList* tokenList)
 {
     // printf("parsing int\n");
-    ExprInt* value = malloc(sizeof(ExprInt));
+    ASMInt* value = malloc(sizeof(ASMInt));
     if (value == NULL)
     {
-        fprintf(stderr, "malloc() ExprInt failed\n");
+        fprintf(stderr, "malloc() ASMInt failed\n");
         exit(1);
     }
     
@@ -302,13 +304,13 @@ ExprInt* parse_int(TokenList* tokenList)
     return value;
 }
 
-Dst* parse_dst(TokenList* tokenList)
+ASMDst* parse_dst(TokenList* tokenList)
 {
     // printf("parsing dst\n");
-    Dst* dst = malloc(sizeof(Dst));
+    ASMDst* dst = malloc(sizeof(ASMDst));
     if (dst == NULL)
     {
-        fprintf(stderr, "malloc() Dst failed\n");
+        fprintf(stderr, "malloc() ASMDst failed\n");
         exit(1);
     }
     
@@ -321,7 +323,7 @@ Dst* parse_dst(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        dst->reg = malloc(sizeof(ExprReg));
+        dst->reg = malloc(sizeof(ASMReg));
         
         dst->reg->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -334,7 +336,7 @@ Dst* parse_dst(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        dst->mem = malloc(sizeof(ExprMem));
+        dst->mem = malloc(sizeof(ASMMem));
         
         dst->mem->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -355,13 +357,13 @@ Dst* parse_dst(TokenList* tokenList)
     return dst;
 }
 
-Src* parse_src(TokenList* tokenList)
+ASMSrc* parse_src(TokenList* tokenList)
 {
     // printf("parsing src\n");
-    Src* src = malloc(sizeof(Src));
+    ASMSrc* src = malloc(sizeof(ASMSrc));
     if (src == NULL)
     {
-        fprintf(stderr, "malloc() Src failed\n");
+        fprintf(stderr, "malloc() ASMSrc failed\n");
         exit(1);
     }
     
@@ -382,7 +384,7 @@ Src* parse_src(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        src->reg = malloc(sizeof(ExprReg));
+        src->reg = malloc(sizeof(ASMReg));
         
         src->reg->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -395,7 +397,7 @@ Src* parse_src(TokenList* tokenList)
         accept_token(tokenList);
         
         expect_token(tokenList, TK_L_SQ_BRACKET);
-        src->mem = malloc(sizeof(ExprMem));
+        src->mem = malloc(sizeof(ASMMem));
         
         src->mem->index = parse_operand(tokenList);
         expect_token(tokenList, TK_R_SQ_BRACKET);
@@ -416,14 +418,14 @@ Src* parse_src(TokenList* tokenList)
     return src;
 }
 
-Operation* parse_operation(TokenList* tokenList)
+ASMOperation* parse_operation(TokenList* tokenList)
 {
     // printf("parsing operation\n");
 
-    Operation* operation = malloc(sizeof(Operation));
+    ASMOperation* operation = malloc(sizeof(ASMOperation));
     if (operation == NULL)
     {
-        fprintf(stderr, "malloc() Operation failed\n");
+        fprintf(stderr, "malloc() ASMOperation failed\n");
         exit(1);
     }
 
@@ -450,13 +452,13 @@ Operation* parse_operation(TokenList* tokenList)
     return operation;
 }
 
-Condition* parse_condition(TokenList* tokenList)
+ASMCondition* parse_condition(TokenList* tokenList)
 {
     // printf("parsing condition\n");
-    Condition* condition = malloc(sizeof(Condition));
+    ASMCondition* condition = malloc(sizeof(ASMCondition));
     if (condition == NULL)
     {
-        fprintf(stderr, "malloc() Condition failed\n");
+        fprintf(stderr, "malloc() ASMCondition failed\n");
         exit(1);
     }
 
@@ -487,19 +489,19 @@ Instruction parse_mov(TokenList* tokenList)
     
     expect_token(tokenList, MN_MOV);
     
-    Dst* dst = parse_dst(tokenList);
+    ASMDst* dst = parse_dst(tokenList);
     
     expect_token(tokenList, TK_COMMA);
     
-    Src* src = parse_src(tokenList);
+    ASMSrc* src = parse_src(tokenList);
     
-    DstKind dstType = dst->kind;
+    ASMDstKind dstType = dst->kind;
     
     // load or store
     if (dstType == DST_REG)
     {
         instruction.kind = INSTR_STORE;
-        instruction.store = malloc(sizeof(Store));
+        instruction.store = malloc(sizeof(ASMStore));
         
         instruction.store->dst = dst;
         instruction.store->src = src;
@@ -507,7 +509,7 @@ Instruction parse_mov(TokenList* tokenList)
     else if (dstType == DST_MEM)
     {
         instruction.kind = INSTR_LOAD;
-        instruction.load = malloc(sizeof(Load));
+        instruction.load = malloc(sizeof(ASMLoad));
 
         instruction.load->dst = dst;
         instruction.load->src = src;
@@ -523,19 +525,19 @@ Instruction parse_movb(TokenList* tokenList)
     
     expect_token(tokenList, MN_MOVB);
 
-    Dst* dst = parse_dst(tokenList);
+    ASMDst* dst = parse_dst(tokenList);
 
     expect_token(tokenList, TK_COMMA);
     
-    Src* src = parse_src(tokenList);
+    ASMSrc* src = parse_src(tokenList);
     
     
-    DstKind dstType = dst->kind;
+    ASMDstKind dstType = dst->kind;
     
     if (dstType == DST_REG)
     {
         instruction.kind = INSTR_STORE;
-        instruction.store = malloc(sizeof(Store));
+        instruction.store = malloc(sizeof(ASMStore));
         
         instruction.store->dst = dst;
         instruction.store->src = src;
@@ -543,7 +545,7 @@ Instruction parse_movb(TokenList* tokenList)
     else if (dstType == DST_MEM)
     {
         instruction.kind = INSTR_LOAD;
-        instruction.load = malloc(sizeof(Load));
+        instruction.load = malloc(sizeof(ASMLoad));
 
         instruction.load->dst = dst;
         instruction.load->src = src;
@@ -559,7 +561,7 @@ Instruction parse_op(TokenList* tokenList)
     Token nextToken = show_next_token(tokenList);
     enum Token_t mnemonic = nextToken.kind;
     
-    instruction.operation = malloc(sizeof(Operation));
+    instruction.operation = malloc(sizeof(ASMOperation));
 
     switch (mnemonic)
     {
@@ -601,11 +603,11 @@ Instruction parse_op(TokenList* tokenList)
         break;
     }
 
-    Dst* dst = parse_dst(tokenList);
+    ASMDst* dst = parse_dst(tokenList);
     
     expect_token(tokenList, TK_COMMA);
 
-    Src* src = parse_src(tokenList);
+    ASMSrc* src = parse_src(tokenList);
     
     instruction.kind = INSTR_OP;
     
@@ -619,15 +621,15 @@ Instruction parse_cmp(TokenList* tokenList)
 {
     // printf("parsing cmp\n");
     Instruction instruction;
-    instruction.comparison = malloc(sizeof(Comparison));
+    instruction.comparison = malloc(sizeof(ASMComparison));
     
     expect_token(tokenList, MN_CMP);
 
-    Dst* dst = parse_dst(tokenList);
+    ASMDst* dst = parse_dst(tokenList);
     
     expect_token(tokenList, TK_COMMA);
     
-    Src* src = parse_src(tokenList);
+    ASMSrc* src = parse_src(tokenList);
     
     instruction.kind = INSTR_CMP;
     
@@ -648,7 +650,7 @@ Instruction parse_call(TokenList* tokenList) {
     
     instruction.kind = INSTR_CALL;
 
-    instruction.call = malloc(sizeof(Call));
+    instruction.call = malloc(sizeof(ASMCall));
     
     switch (func)
     {
@@ -656,7 +658,7 @@ Instruction parse_call(TokenList* tokenList) {
         instruction.call->name = malloc((7 + 1) * sizeof(char));
         if (instruction.call->name == NULL)
         {
-            fprintf(stderr, "malloc() Call failed\n");
+            fprintf(stderr, "malloc() ASMCall failed\n");
             exit(1);
         }
         
@@ -670,7 +672,7 @@ Instruction parse_call(TokenList* tokenList) {
         instruction.call->name = malloc((4 + 1) * sizeof(char));
         if (instruction.call->name == NULL)
         {
-            fprintf(stderr, "malloc() Call failed\n");
+            fprintf(stderr, "malloc() ASMCall failed\n");
             exit(1);
         }
 
@@ -695,17 +697,17 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
     Token nextToken = show_next_token(tokenList);
     enum Token_t mnemonic = nextToken.kind;
 
-    instruction.jump = malloc(sizeof(Jump));
+    instruction.jump = malloc(sizeof(ASMJump));
     if (instruction.jump == NULL)
     {
-        fprintf(stderr, "malloc() Jump failed\n");
+        fprintf(stderr, "malloc() ASMJump failed\n");
         exit(1);
     }
     
-    Condition* condition = malloc(sizeof(Condition));
+    ASMCondition* condition = malloc(sizeof(ASMCondition));
     if (condition == NULL)
     {
-        fprintf(stderr, "malloc() Condition failed\n");
+        fprintf(stderr, "malloc() ASMCondition failed\n");
         exit(1);
     }
     
@@ -739,6 +741,11 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
         condition->kind = COND_LESS;
         expect_token(tokenList, MN_JL);
         break;
+    case MN_JMP:
+        // printf("parsing jl\n");
+        condition->kind = COND_TRUE;
+        expect_token(tokenList, MN_JMP);
+        break;
     default:
         fprintf(stderr, "And don't forget to implement the case of '%s' in parse_jmp :)\n", print_token(&nextToken));
         exit(1);
@@ -746,12 +753,12 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
     }
 
     // TODO: replace (bogus check, just to continue the program)
-    Dst* dst = parse_dst(tokenList);
+    ASMDst* dst = parse_dst(tokenList);
     free_dst(dst);
 
     expect_token(tokenList, TK_JUMP_ARROW);
 
-    ExprInt* jump = parse_int(tokenList);
+    ASMInt* jump = parse_int(tokenList);
     int jump_addr = jump->value;
     free(jump);
 
@@ -761,16 +768,24 @@ Instruction parse_jmp(TokenList* tokenList, int offset)
         fprintf(stderr, "malloc() Instruction failed\n");
         exit(1);
     }
-    instruction.jump->false_branch = malloc(sizeof(Instruction));
-    if (instruction.jump->false_branch == NULL)
+    instruction.jump->true_branch->offset = jump_addr;
+
+    if (condition->kind == COND_TRUE)
     {
-        fprintf(stderr, "malloc() Instruction failed\n");
-        exit(1);
+        instruction.jump->false_branch = NULL;
+    }
+    else
+    {
+        instruction.jump->false_branch = malloc(sizeof(Instruction));
+        if (instruction.jump->false_branch == NULL)
+        {
+            fprintf(stderr, "malloc() Instruction failed\n");
+            exit(1);
+        }
+        instruction.jump->false_branch->offset = offset + 1;
     }
 
     instruction.jump->jump_resolved = false;
-    instruction.jump->true_branch->offset = jump_addr;
-    instruction.jump->false_branch->offset = offset + 1;
     instruction.jump->condition = condition;
 
     return instruction;

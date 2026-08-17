@@ -23,6 +23,7 @@ typedef enum Token_t
     MN_JA,
     MN_JE,
     MN_JL,
+    MN_JMP,
     MN_CMP,
     MN_MOVB,
     MN_CALL,
