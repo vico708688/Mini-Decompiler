@@ -1,11 +1,11 @@
-#include "parser.h"
+#include "frontend/parser.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "utils.h"
-#include "token.h"
+#include "utils/utils.h"
+#include "frontend/token.h"
 
 // TODO: delete
 // #include "pretty_printer.h"

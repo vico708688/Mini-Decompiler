@@ -2,7 +2,7 @@
 #define H_CFG
 
 #include <stdbool.h>
-#include "parser.h"
+#include "frontend/parser.h"
 
 typedef struct Node Node;
 typedef struct Edge Edge;
@@ -49,7 +49,7 @@ typedef struct Node {
     int predecessor_idx;
 
     Node* dominator;
-    int post_order_number;
+    int number;
     bool processed;
 
     Node** dominator_frontier;
@@ -62,6 +62,8 @@ typedef struct Node {
 typedef struct Edge {
     Node* start;
     Node* target;
+
+    int number;
 
     bool visited;
 } Edge;

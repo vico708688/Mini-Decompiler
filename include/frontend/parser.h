@@ -1,8 +1,8 @@
 #ifndef H_PARSER
 #define H_PARSER
 
-#include "token.h"
-#include "ASM.h"
+#include "frontend/token.h"
+#include "frontend/ASM.h"
 
 typedef Instruction (*ParseFunc)(TokenList*);
 typedef struct Parse_DispatchTable

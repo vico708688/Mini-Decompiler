@@ -1,7 +1,7 @@
 #ifndef H_LEXER
 #define H_LEXER
 
-#include "token.h"
+#include "frontend/token.h"
 
 #include <stdbool.h>
 #include <regex.h>

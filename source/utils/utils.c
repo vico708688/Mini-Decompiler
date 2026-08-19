@@ -3,10 +3,10 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "utils.h"
-#include "token.h"
-#include "CFG.h"
-#include "graph.h"
+#include "utils/utils.h"
+#include "frontend/token.h"
+#include "backend/CFG.h"
+#include "backend/graph.h"
 
 char* read_asm_file(char* path)
 {

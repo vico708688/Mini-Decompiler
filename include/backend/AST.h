@@ -1,7 +1,7 @@
 #ifndef H_AST
 #define H_AST
 
-#include "CFG.h"
+#include "backend/CFG.h"
 
 // -------------------------------------- AsmCfg structure -----------------------------------------
 typedef enum LoopKind

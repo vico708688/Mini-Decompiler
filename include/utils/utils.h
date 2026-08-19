@@ -2,11 +2,19 @@
 #define H_UTILS
 
 #include <regex.h>
-#include "token.h"
-#include "CFG.h"
-#include "graph.h"
+#include "frontend/token.h"
+#include "backend/CFG.h"
+#include "backend/graph.h"
 
-typedef struct {
+typedef struct Stack
+{
+    Node** nodes;
+    int nb_nodes;
+    int node_idx;
+} Stack;
+
+typedef struct
+{
     regex_t integer;
     regex_t charac;
 } regexList;

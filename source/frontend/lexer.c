@@ -1,10 +1,10 @@
-#include "lexer.h"
+#include "frontend/lexer.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "utils.h"
+#include "utils/utils.h"
 
 int column = 1;
 int line = 1;

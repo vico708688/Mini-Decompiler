@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "CFG.h"
-#include "pretty_printer.h"
+#include "backend/CFG.h"
+#include "backend/pretty_printer.h"
 
 void visit_program(Visitor* v, Asm* program, FILE* f)
 {

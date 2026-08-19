@@ -68,7 +68,7 @@ typedef enum ASMSrcKind
 } ASMSrcKind;
 
 
-// ------------------- BASIC STRUCTS ----------------------
+// ------------------- BASIC STRUCTS: to delete ? ----------------------
 typedef struct ASMInt
 {
     int value;

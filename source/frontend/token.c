@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "token.h"
+#include "frontend/token.h"
 
 char* print_token(Token* token)
 {

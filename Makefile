@@ -2,24 +2,23 @@ DST = build
 SRC = source
 INC = include
 
-SOURCES := $(wildcard $(SRC)/*.c)
-OBJECTS := $(patsubst $(SRC)/%.c, $(DST)/%.o, $(SOURCES))
+SOURCES := $(shell find $(SRC) -type f -name '*.c')
+OBJECTS := $(patsubst $(SRC)/%.c,$(DST)/%.o,$(SOURCES))
 
 C_FLAGS = -I$(INC)
 FLAGS = -Wall -g
 
-all: main
+all: $(DST)/main
 
-main: $(OBJECTS)
-	gcc $(FLAGS) -o $(DST)/main $(OBJECTS)
+$(DST)/main: $(OBJECTS)
+	@mkdir -p $(dir $@)
+	gcc $(FLAGS) -o $@ $(OBJECTS)
 
-$(DST)/%.o: $(SRC)/%.c | $(DST)
+$(DST)/%.o: $(SRC)/%.c
+	@mkdir -p $(dir $@)
 	gcc $(C_FLAGS) $(FLAGS) -c $< -o $@
-
-$(DST):
-	@mkdir -p $(DST)
 
 .PHONY: clean
 
 clean:
-	@rm -rf $(DST)/* $(DST)/main
+	@rm -rf $(DST)

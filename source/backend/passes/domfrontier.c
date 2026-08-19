@@ -2,61 +2,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "graph_utils.h"
-#include "pretty_printer.h"
-#include "CFG.h"
+#include "utils/graph_utils.h"
+#include "backend/CFG.h"
 
-void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
-    if (cfg == NULL)
-        return;
-    
-    Visitor v;
-
-    FILE *f = fopen(dot_file, "w");
-    if (f == NULL) {
-        fprintf(stderr, "fopen() failed\n");
-        exit(1);
-    }
-
-    fprintf(f, "digraph G {\n");
-    fprintf(f, "    rankdir=TB;\n");
-    fprintf(f, "    node [shape=box];\n\n");
-
-    int instr_count = 0;
-
-    for (int i = 0; i < cfg->nb_nodes; i++) {
-        Node* b = &cfg->nodes[i];
-        if (b != NULL) {
-            fprintf(f, "    node_%d -> {", b->start_instruction->offset);
-            for (int successor_idx = 0; successor_idx < b->nb_successors; successor_idx++)
-            {
-                fprintf(f, "node_%d ", b->successors[successor_idx]->start_instruction->offset);
-            }
-            fprintf(f, "}\n");
-
-            fprintf(f, "node_%d [label=\"", b->start_instruction->offset);
-            for (int instr_idx = 0; instr_idx < b->nb_instructions; instr_idx++)
-            {
-                Instruction* instr = (b->start_instruction + instr_idx);
-                fprintf(f, "%d | ", instr_count);
-                visit_instruction(&v, instr, f);
-                instr_count++;
-            }
-            fprintf(f, "\"]\n");
-            
-        }
-    }
-
-    fprintf(f, "}\n");
-    fclose(f);
-
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "dot -Tpng %s -o %s && xdg-open %s", dot_file, png_file, png_file);
-    system(cmd);
-
-    printf("Graphviz written in %s\n", dot_file);
-    printf("Image generated in %s\n", png_file);
-}
 
 void DFS(Cfg* cfg, Node* node, List* list_nodes)
 {
@@ -67,7 +15,19 @@ void DFS(Cfg* cfg, Node* node, List* list_nodes)
         if (next_node->visited == false)
         {
             DFS(cfg, next_node, list_nodes);
-            next_node->post_order_number = list_nodes->index;
+            /* update edge number */
+            for (int edge_idx = 0; edge_idx < cfg->nb_edges; edge_idx++)
+            {
+                Edge edge = cfg->edges[edge_idx];
+                if (edge.start == node && edge.target == next_node)
+                {
+                    edge.number = list_nodes->index;
+                    break;
+                }
+            }
+            
+            /* update node number */
+            next_node->number = list_nodes->index;
             (*list_nodes->nodes)[(list_nodes->index)++] = next_node;
         }
     }
@@ -86,7 +46,7 @@ void reverse_post_order(Cfg* cfg, Node*** list_nodes)
     /* Depth First Search */
     DFS(cfg, cfg->header, &list);
     temp[cfg->nb_nodes - 1] = cfg->header;
-    temp[cfg->nb_nodes - 1]->post_order_number = cfg->nb_nodes - 1;
+    temp[cfg->nb_nodes - 1]->number = cfg->nb_nodes - 1;
     
     /* reset each node to unvisited state */
     for (int i = 0; i < cfg->nb_nodes; i++)
@@ -108,13 +68,13 @@ Node* intersect(Node* b1, Node* b2)
     Node* finger1 = b1;
     Node* finger2 = b2;
     
-    while (finger1->post_order_number != finger2->post_order_number)
+    while (finger1->number != finger2->number)
     {
-        while (finger1->post_order_number < finger2->post_order_number)
+        while (finger1->number < finger2->number)
         {
             finger1 = finger1->dominator;
         }
-        while (finger1->post_order_number > finger2->post_order_number)
+        while (finger1->number > finger2->number)
         {
             finger2 = finger2->dominator;
         }
@@ -242,13 +202,11 @@ void compute_dominance_frontier(Cfg* cfg)
     for (int i = 0; i < cfg->nb_nodes; i++)
     {
         Node* node = &cfg->nodes[i];
-        printf("Dominance frontier for node %d:\n", node->start_instruction->offset);
-        for (int dom_idx = 0; dom_idx < node->nb_dominators; dom_idx++)
-        {
-            printf("%d ", node->dominator_frontier[dom_idx]->start_instruction->offset);
-        }
-        printf("\n");
-        
+        // printf("Dominance frontier for node %d:\n", node->start_instruction->offset);
+        // for (int dom_idx = 0; dom_idx < node->nb_dominators; dom_idx++)
+        // {
+        //     printf("%d ", node->dominator_frontier[dom_idx]->start_instruction->offset);
+        // }
+        // printf("\n");
     }
-    
 }

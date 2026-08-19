@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <graphviz/gvc.h>
 
-#include "graph.h"
-#include "utils.h"
-#include "CFG.h"
+#include "backend/graph.h"
+#include "utils/utils.h"
+#include "backend/CFG.h"
 
 // TODO: change it to graph header
 const int START_NODE = 0;
@@ -67,7 +67,7 @@ void get_info_graph(Asm* program, int** list_node_indices, int* nb_basic_nodes, 
     *nb_edges = nb_edges_final;
 }
 
-Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
+Cfg* initialize_empty_graph(int nb_nodes, int nb_edges)
 {
     Cfg* cfg = malloc(sizeof(Cfg));
     if (cfg == NULL)
@@ -93,6 +93,13 @@ Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb
         fprintf(stderr, "malloc() Edge failed\n");
         exit(1);
     }
+
+    return cfg;
+}
+
+Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
+{
+    Cfg* cfg = initialize_empty_graph(nb_nodes, nb_edges);
 
     // start node
     Node* start_node = &cfg->nodes[0];

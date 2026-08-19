@@ -1,19 +1,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "decompiler.h"
+#include "ccg.h"
 
-#include "utils.h"
-#include "token.h"
-#include "lexer.h"
-#include "parser.h"
-#include "pretty_printer.h"
-#include "graph.h"
-#include "SSA.h"
+#include "utils/utils.h"
+#include "frontend/token.h"
+#include "frontend/lexer.h"
+#include "frontend/parser.h"
+#include "backend/graph.h"
+#include "backend/SSA.h"
+#include "backend/cf_structuring.h"
+#include "utils/printCFG.h"
 
+// TODO : remove
+#include "utils/graph_utils.h"
 
-// TODO: delete
-#include "graph_utils.h"
 
 /**
  * It assumes as input an assembler code file from a disassembler that 
@@ -26,17 +27,16 @@
              Decoding                       <- done
                 │
                 v
-                IR
-      (architecture independent)            <- skipped
+                IR                          <- done
                 │
                 v
                CFG                          <- done
                 │
                 v
-            SSA (often)                     <- TODO
+               SSA                          <- TODO
                 │
                 v
-          Optimisations                     <- skipped
+          Optimisations                     <- 
  (constant folding, propagation...)
                 │
                 v
@@ -49,6 +49,16 @@
                 v
         C Code / pseudo-code
  */
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s asm_file.txt\n", argv[0]);
+        exit(0);
+    }
+
+    int ret = decompile(argv[1]);
+    return ret;
+}
+
 int decompile(char* file_path) {
     char* asmfile = read_asm_file(file_path);
 
@@ -59,23 +69,14 @@ int decompile(char* file_path) {
     TokenList* tokenList = lexer(&asmfile, &nb_instructions);
 
     Asm* program = parser(tokenList, nb_instructions);
-
-    // Visitor visitor;
-    // visit_program(&visitor, program, stdout);
     
     Cfg* cfg = asm_to_cfg(program);
 
-    graph_to_graphviz(cfg, "graph.dot", "graph.png");
+    cfg_to_SSA_form(cfg);
     
-    // compute_idom(cfg);
-    compute_dominance_frontier(cfg);
+    // compute_dominance_frontier(cfg);
+    // graph_to_graphviz(cfg, "graph.dot", "graph.png");
     
-    // cfg_to_SSA_form(cfg);
-
-    // simplify_cfg(cfg);
-
-    // graph_to_graphviz(cfg, "graph_simplified.dot", "graph_simplified.png");
-
     free_asm(program);
     free_cfg(cfg);
     free_tokens(tokenList);
