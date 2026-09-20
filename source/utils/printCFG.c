@@ -35,7 +35,7 @@ void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
             fprintf(f, "node_%d [label=\"", b->start_instruction->offset);
             for (int instr_idx = 0; instr_idx < b->nb_instructions; instr_idx++)
             {
-                Instruction* instr = (b->start_instruction + instr_idx);
+                AtomicInstr* instr = (b->start_instruction + instr_idx); // TODO: -> OK ?
                 fprintf(f, "%d | ", instr_count);
                 visit_instruction(&v, instr, f);
                 instr_count++;

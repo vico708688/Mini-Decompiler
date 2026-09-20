@@ -1,8 +1,8 @@
 #ifndef H_SSA
 #define H_SSA
 
-#include "backend/CFG.h"
+#include "backend/IR.h"
 
-void cfg_to_SSA_form(Cfg* cfg);
+void ir_to_ssa(IR* ir);
 
 #endif

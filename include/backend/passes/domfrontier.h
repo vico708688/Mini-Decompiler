@@ -1,5 +1,5 @@
-#ifndef H_PRETTY_PRINTER
-#define H_PRETTY_PRINTER
+#ifndef H_DOMFRONTIER
+#define H_DOMFRONTIER
 
 #include <stdio.h>
 #include "backend/CFG.h"

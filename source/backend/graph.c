@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <graphviz/gvc.h>
 
 #include "backend/graph.h"
 #include "utils/utils.h"
@@ -9,43 +8,47 @@
 // TODO: change it to graph header
 const int START_NODE = 0;
 
-int compare_ints(const void* a, const void* b)
+int compare_ints(const void *a, const void *b)
 {
-    return *(const int *) a - *(const int *) b;
+    return *(const int *)a - *(const int *)b;
 }
 
-void get_info_graph(Asm* program, int** list_node_indices, int* nb_basic_nodes, int* nb_edges)
+void get_info_graph(IR *ir, int **list_node_indices, int *nb_basic_nodes, int *nb_edges)
 {
     (*nb_edges) = 0;
     (*nb_basic_nodes) = 0;
-    
-    (*list_node_indices) = malloc(program->nb_instructions * sizeof(int));
-    if ((*list_node_indices) == NULL) {
+
+    (*list_node_indices) = malloc(ir->index * sizeof(int));
+    if ((*list_node_indices) == NULL)
+    {
         fprintf(stderr, "malloc() list_node_instruction failed\n");
         exit(1);
     }
-    
+
     (*list_node_indices)[(*nb_edges)++] = 0;
-    
-    for (int instruction_index = 0; instruction_index < program->nb_instructions; instruction_index++)
+
+    for (int atomic_op_index = 0; atomic_op_index < ir->index; atomic_op_index++)
     {
-        Instruction instruction = program->instructions[instruction_index];
-        
-        if (instruction.kind == INSTR_JMP)
+        AtomicInstr atomic_op = ir->atomic_instructions[atomic_op_index];
+
+        if (atomic_op.kind == ATM_JMP)
         {
-            (*list_node_indices)[(*nb_edges)++] = instruction.jump->true_branch->offset;
-            if (instruction.jump->condition->kind != COND_TRUE)
-            {
-                (*list_node_indices)[(*nb_edges)++] = instruction.jump->false_branch->offset;
-            }
+            (*list_node_indices)[(*nb_edges)++] = atomic_op.jmp.jmp_addr.address.offset;
         }
+        else if (atomic_op.kind == ATM_CONDJMP)
+        {
+            (*list_node_indices)[(*nb_edges)++] = atomic_op.jmp.jmp_addr.address.offset;
+            (*list_node_indices)[(*nb_edges)++] = atomic_op.offset + 1;                                     // TODO: OK ?
+        }
+        
     }
-    
+
     // sort
     qsort((*list_node_indices), *nb_edges, sizeof(int), compare_ints);
 
     // remove duplicate
-    for (int i = 0; i < *nb_edges; i++) {
+    for (int i = 0; i < *nb_edges; i++)
+    {
         if (i == 0 || (*list_node_indices)[i] != (*list_node_indices)[i - 1])
         {
             (*list_node_indices)[(*nb_basic_nodes)++] = (*list_node_indices)[i];
@@ -57,7 +60,7 @@ void get_info_graph(Asm* program, int** list_node_indices, int* nb_basic_nodes, 
     int nb_edges_final = 0;
     for (int i = 0; i < *nb_basic_nodes - 1; i++)
     {
-        if (program->instructions[(*list_node_indices)[i + 1] - 1].kind == INSTR_JMP)
+        if (ir->atomic_instructions[(*list_node_indices)[i + 1] - 1].kind == ATM_JMP)
         {
             nb_edges_final++;
         }
@@ -67,15 +70,15 @@ void get_info_graph(Asm* program, int** list_node_indices, int* nb_basic_nodes, 
     *nb_edges = nb_edges_final;
 }
 
-Cfg* initialize_empty_graph(int nb_nodes, int nb_edges)
+Cfg *initialize_empty_graph(int nb_nodes, int nb_edges)
 {
-    Cfg* cfg = malloc(sizeof(Cfg));
+    Cfg *cfg = malloc(sizeof(Cfg));
     if (cfg == NULL)
     {
         fprintf(stderr, "malloc() Cfg failed\n");
         exit(1);
     }
-    
+
     cfg->nb_nodes = nb_nodes;
     cfg->node_idx = 0;
     cfg->nodes = calloc(cfg->nb_nodes, sizeof(Node));
@@ -97,41 +100,41 @@ Cfg* initialize_empty_graph(int nb_nodes, int nb_edges)
     return cfg;
 }
 
-Cfg* initialize_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
+Cfg *initialize_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
 {
-    Cfg* cfg = initialize_empty_graph(nb_nodes, nb_edges);
+    Cfg *cfg = initialize_empty_graph(nb_nodes, nb_edges);
 
     // start node
-    Node* start_node = &cfg->nodes[0];
-    start_node->start_instruction = &program->instructions[list_node_indices[0]];
+    Node *start_node = &cfg->nodes[0];
+    start_node->start_instruction = &ir->atomic_instructions[list_node_indices[0]];
     start_node->nb_instructions = list_node_indices[1] - list_node_indices[0];
-    
+
     // middle nodes
     for (int node_idx = 1; node_idx < cfg->nb_nodes - 1; node_idx++)
     {
-        Node* node = &cfg->nodes[node_idx];
-        node->start_instruction = &program->instructions[list_node_indices[node_idx]];
+        Node *node = &cfg->nodes[node_idx];
+        node->start_instruction = &ir->atomic_instructions[list_node_indices[node_idx]];
         node->nb_instructions = list_node_indices[node_idx + 1] - list_node_indices[node_idx];
     }
-    
+
     // end node
-    Node* end_node = &cfg->nodes[cfg->nb_nodes - 1];
-    end_node->start_instruction = &program->instructions[list_node_indices[nb_nodes - 1]];
-    end_node->nb_instructions = program->nb_instructions - list_node_indices[nb_nodes - 1];
-    
+    Node *end_node = &cfg->nodes[cfg->nb_nodes - 1];
+    end_node->start_instruction = &ir->atomic_instructions[list_node_indices[nb_nodes - 1]];
+    end_node->nb_instructions = ir->index - list_node_indices[nb_nodes - 1];
+
     return cfg;
 }
 
-Instruction* get_instruction_from_node(Node* node, int instruction_offset)
+AtomicInstr *get_instruction_from_node(Node *node, int instruction_offset)
 {
-    return (Instruction*)(node->start_instruction + instruction_offset);
+    return (AtomicInstr *)(node->start_instruction + instruction_offset);
 }
 
-Node* find_node_from_start_instruction_offset(Cfg* cfg, int start_instruction_offset)
+Node *find_node_from_start_instruction_offset(Cfg *cfg, int start_instruction_offset)
 {
     for (int i = 0; i < cfg->nb_nodes; i++)
     {
-        Node* node = &cfg->nodes[i];
+        Node *node = &cfg->nodes[i];
         if (node->start_instruction->offset == start_instruction_offset)
         {
             return node;
@@ -140,25 +143,25 @@ Node* find_node_from_start_instruction_offset(Cfg* cfg, int start_instruction_of
     return NULL;
 }
 
-void update_neighbour_nodes(Cfg* cfg, Node* current_node, int next_node_start_instruction_offset)
+void update_neighbour_nodes(Cfg *cfg, Node *current_node, int next_node_start_instruction_offset)
 {
-    Node* true_branch_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction_offset);
+    Node *true_branch_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction_offset);
     current_node->successors[(current_node->successor_idx)++] = true_branch_node;
-    
+
     if (true_branch_node->predecessors == NULL)
     {
-        true_branch_node->predecessors = malloc(sizeof(Node*));
+        true_branch_node->predecessors = malloc(sizeof(Node *));
     }
     else
     {
-        true_branch_node->predecessors = realloc(true_branch_node->predecessors, (true_branch_node->nb_predecessors + 1) * sizeof(Node*));
+        true_branch_node->predecessors = realloc(true_branch_node->predecessors, (true_branch_node->nb_predecessors + 1) * sizeof(Node *));
     }
-    
+
     (true_branch_node->nb_predecessors)++;
     true_branch_node->predecessors[(true_branch_node->predecessor_idx)++] = current_node;
 }
 
-void create_edge(Cfg* cfg, Node* start, Node* target)
+void create_edge(Cfg *cfg, Node *start, Node *target)
 {
     if (cfg->edge_idx >= cfg->nb_edges)
     {
@@ -175,9 +178,14 @@ void create_edge(Cfg* cfg, Node* start, Node* target)
     cfg->edges[(cfg->edge_idx)++] = edge;
 }
 
-Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_instruction_last_node)
+
+/**
+ * Add: basic graph with only 1 node (ex: mov reg[0], reg[0]
+ *                                        call putchar      )
+ */
+Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_instruction_last_node)
 {
-    Node* current_node = find_node_from_start_instruction_offset(cfg, instruction_offset);
+    Node *current_node = find_node_from_start_instruction_offset(cfg, instruction_offset);
     if (current_node == NULL)
     {
         fprintf(stderr, "Node %ld not found\n", current_node - cfg->nodes);
@@ -188,8 +196,8 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
     {
         return NULL;
     }
-    
-    Instruction* last_instruction = get_instruction_from_node(current_node, current_node->nb_instructions - 1);
+
+    AtomicInstr *last_instruction = get_instruction_from_node(current_node, current_node->nb_instructions - 1);
     if (instruction_offset == START_NODE)
     {
         cfg->header = current_node;
@@ -197,35 +205,36 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
 
     // current_node creation
     current_node->visited = true;
-    
+
     // here, we suppose that the program cannot end with a jmp instruction (strong supposition but hey...)
-    if (last_instruction->kind == INSTR_JMP)
+    if (last_instruction->kind == ATM_CONDJMP || last_instruction->kind == ATM_JMP)
     {
         current_node->nb_successors = 1;
-        current_node->successors = malloc(current_node->nb_successors * sizeof(Node*));
+        current_node->successors = malloc(current_node->nb_successors * sizeof(Node *));
+
         // true branch node ------------------------------------------------
-        
-        int true_branch_start_instruction_offset = last_instruction->jump->true_branch->offset;
-        
+
+        int true_branch_start_instruction_offset = last_instruction->jmp.jmp_addr.address.offset;
+
         update_neighbour_nodes(cfg, current_node, true_branch_start_instruction_offset);
-        
-        Node* true_node = generate_subgraph_from_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
+
+        Node *true_node = generate_subgraph_from_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
         if (true_node != NULL)
         {
             create_edge(cfg, current_node, true_node);
         }
-        
+
         // false branch node -----------------------------------------------
-        
-        if (last_instruction->jump->condition->kind != COND_TRUE)
+
+        if (last_instruction->kind == ATM_CONDJMP)
         {
             (current_node->nb_successors)++;
-            current_node->successors = realloc(current_node->successors, current_node->nb_successors * sizeof(Node*));
-            int false_branch_start_instruction_offset = last_instruction->jump->false_branch->offset;
-            
+            current_node->successors = realloc(current_node->successors, current_node->nb_successors * sizeof(Node *));
+            int false_branch_start_instruction_offset = last_instruction->offset + 1;
+
             update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
-            
-            Node* false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
+
+            Node *false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
             if (false_node != NULL)
             {
                 create_edge(cfg, current_node, false_node);
@@ -236,47 +245,47 @@ Node* generate_subgraph_from_node(Cfg* cfg, int instruction_offset, int last_ins
     else if (last_instruction->offset != last_instruction_last_node)
     {
         current_node->nb_successors = 1;
-        current_node->successors = malloc(current_node->nb_successors * sizeof(Node*));
+        current_node->successors = malloc(current_node->nb_successors * sizeof(Node *));
         int next_node_start_instruction_offset = (last_instruction + 1)->offset;
-        
+
         update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
-        
-        Node* next_node = generate_subgraph_from_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
+
+        Node *next_node = generate_subgraph_from_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
         if (next_node != NULL)
         {
             create_edge(cfg, current_node, next_node);
         }
     }
-    
+
     return current_node;
 }
 
-Cfg* create_graph(Asm* program, int* list_node_indices, int nb_nodes, int nb_edges)
+Cfg *create_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
 {
-    Cfg* cfg = initialize_graph(program, list_node_indices, nb_nodes, nb_edges);
+    Cfg *cfg = initialize_graph(ir, list_node_indices, nb_nodes, nb_edges);
 
-    generate_subgraph_from_node(cfg, START_NODE, program->nb_instructions - 1);
+    generate_subgraph_from_node(cfg, START_NODE, ir->index - 1);
 
     /* reset each node to unvisited state */
     for (int i = 0; i < cfg->nb_nodes; i++)
     {
         cfg->nodes[i].visited = false;
     }
-    
 
     return cfg;
 }
 
-Cfg* asm_to_cfg(Asm* program) {
-    int* list_node_indices;
+Cfg *asm_to_cfg(IR *ir)
+{
+    int *list_node_indices;
     int nb_nodes;
     int nb_edges;
 
-    get_info_graph(program, &list_node_indices, &nb_nodes, &nb_edges);
-    
-    Cfg* cfg = create_graph(program, list_node_indices, nb_nodes, nb_edges);
+    get_info_graph(ir, &list_node_indices, &nb_nodes, &nb_edges);
+
+    Cfg *cfg = create_graph(ir, list_node_indices, nb_nodes, nb_edges);
 
     free(list_node_indices);
-    
+
     return cfg;
 }

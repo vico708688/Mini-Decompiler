@@ -1,17 +1,17 @@
-#ifndef H_TOKEN
-#define H_TOKEN
+#ifndef H_TOKEN_WEEPERVM
+#define H_TOKEN_WEEPERVM
 
 #include <stdbool.h>
 
 // /!\ carefull with the order -> mnemonic first
-typedef enum Token_t
+typedef enum TokenKind
 {
     // classical mnemonics
     MN_MOV,
     MN_ADD,
     MN_SUB,
     MN_MUL,
-    MN_MOD,
+    MN_REM,
     MN_AND,
     MN_OR,
     MN_XOR,
@@ -19,17 +19,18 @@ typedef enum Token_t
     MN_SHR,
 
     // special mnemonics
-    MN_JIF,
+    MN_JNZ,
     MN_JA,
     MN_JE,
     MN_JL,
     MN_JMP,
+    MN_CONDJMP,
     MN_CMP,
     MN_MOVB,
     MN_CALL,
     
     // end of the mnemonic list
-    TOKEN_MAX,
+    MN_COUNT,
     
     // special char
 	TK_COMMA,
@@ -47,29 +48,32 @@ typedef enum Token_t
     FUNC_READ,
 
     // operands
-	TK_INT_NUMBER,
+	TK_IMMEDIATE,
     TK_REGISTER,
     TK_MEMORY,
     TK_FLAG,
 	TK_LABEL,
 
-} Token_t;
+} TokenKind;
 
-union TokenValue {
+union TokenValue
+{
 	char* value_str;
 	char value_chr;
 	int value_int;
 };
 
-typedef struct {
-	enum Token_t kind;
+typedef struct Token
+{
+	enum TokenKind kind;
 	union TokenValue value;
     bool ownstr;
 	int line;
 	int column;
 } Token;
 
-typedef struct {
+typedef struct TokenList
+{
 	Token* tokens;
     int nb_tokens;
 	int token_index;

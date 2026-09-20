@@ -8,9 +8,9 @@
 /**
  * Lazy SSA : file:///home/victor/Downloads/978-3-642-37051-9.pdf
  */
-void cfg_to_SSA_form(Cfg* cfg)
+void ir_to_ssa(IR* ir)
 {
-    compute_dominance_frontier(cfg);
+    compute_dominance_frontier(ir);
 }
 
 

@@ -202,6 +202,7 @@ void compute_dominance_frontier(Cfg* cfg)
     for (int i = 0; i < cfg->nb_nodes; i++)
     {
         Node* node = &cfg->nodes[i];
+        (void)node;
         // printf("Dominance frontier for node %d:\n", node->start_instruction->offset);
         // for (int dom_idx = 0; dom_idx < node->nb_dominators; dom_idx++)
         // {
