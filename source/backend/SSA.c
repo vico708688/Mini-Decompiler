@@ -2,15 +2,11 @@
 #include <stdio.h>
 
 #include "backend/SSA.h"
-#include "backend/CFG.h"
 #include "utils/graph_utils.h"
 
-/**
- * Lazy SSA : file:///home/victor/Downloads/978-3-642-37051-9.pdf
- */
-void ir_to_ssa(IR* ir)
+void cfg_to_ssa(CFG* cfg)
 {
-    compute_dominance_frontier(ir);
+    compute_dominance_frontier(cfg);
 }
 
 

@@ -47,7 +47,7 @@ ASMOpcode token_to_opcode(TokenKind token)
         return OPCODE_CALL;
 
     default:
-        fprintf(stderr, "Error parsing, the token number %d is not a valid opcode.\n", token);
+        fprintf(stderr, "\e[31m Error\e[0m: During parsing, the token number %d is not a valid opcode.\n", token);
         exit(1);
         break;
     }
@@ -117,7 +117,7 @@ Token accept_token(TokenList *tokenList)
         return tokenList->tokens[tokenList->token_index - 1];
     }
 
-    fprintf(stderr, "Error token indice (%d > %d)\n", tokenList->token_index - 1, tokenList->nb_tokens);
+    fprintf(stderr, "\e[31m Error\e[0m: wrong token indice (%d > %d)\n", tokenList->token_index - 1, tokenList->nb_tokens);
     exit(1);
 }
 
@@ -159,7 +159,7 @@ ASM *parse_asm(TokenList *tokenList, int nb_instructions)
     ASM *program = malloc(sizeof(ASM));
     if (program == NULL)
     {
-        perror("Error instruction malloc.\n");
+        perror("\e[31m Error\e[0m instruction malloc.\n");
         exit(EXIT_FAILURE);
     }
 

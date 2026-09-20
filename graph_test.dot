@@ -1,0 +1,87 @@
+digraph G {
+    rankdir=TB;
+    node [shape=box];
+
+    node_0 -> {node_32 node_12 }
+node_0 [label="0 | COPY(REG:[12], CONST_0)
+1 | COPY(REG:[14], CONST_255)
+2 | ADD(REG:[14], CONST_135)
+3 | COPY(REG:[15], CONST_255)
+4 | ADD(REG:[15], CONST_255)
+5 | ADD(REG:[15], CONST_255)
+6 | ADD(REG:[15], CONST_31)
+7 | COPY(REG:[6], CONST_64)
+8 | ADD(REG:[6], REG:[12])
+9 | LOAD(REG:[5], MEM:[REG:[6]])
+10 | EQUAL(REG:[5], CONST_0)
+11 | CONDJMP(CONST_32)
+"]
+    node_12 -> {node_16 node_14 }
+node_12 [label="12 | EQUAL(REG:[5], CONST_0)
+13 | CONDJMP(CONST_16)
+"]
+    node_14 -> {node_17 node_16 }
+node_14 [label="14 | EQUAL(REG:[5], CONST_0)
+15 | CONDJMP(CONST_17)
+"]
+    node_16 -> {node_21 }
+node_16 [label="16 | JMP(CONST_21)
+"]
+    node_17 -> {node_21 }
+node_17 [label="17 | COPY(REG:[14], CONST_255)
+18 | ADD(REG:[14], CONST_143)
+19 | COPY(REG:[15], CONST_255)
+20 | ADD(REG:[15], CONST_107)
+"]
+    node_21 -> {node_22 }
+node_21 [label="21 | COPY(REG:[12], CONST_0)
+"]
+    node_22 -> {node_27 node_24 }
+node_22 [label="22 | EQUAL(REG:[12], REG:[4])
+23 | CONDJMP(CONST_27)
+"]
+    node_24 -> {node_43 node_26 }
+node_24 [label="24 | EQUAL(REG:[12], CONST_16)
+25 | CONDJMP(CONST_43)
+"]
+    node_26 -> {node_31 }
+node_26 [label="26 | JMP(CONST_31)
+"]
+    node_27 -> {node_31 node_30 }
+node_27 [label="27 | LOAD(REG:[4], MEM:[REG:[11]])
+28 | EQUAL(REG:[4], CONST_0)
+29 | CONDJMP(CONST_31)
+"]
+    node_30 -> {node_43 }
+node_30 [label="30 | JMP(CONST_43)
+"]
+    node_31 -> {node_22 }
+node_31 [label="31 | JMP(CONST_22)
+"]
+    node_32 -> {node_37 node_35 }
+node_32 [label="32 | ADD(REG:[15], CONST_206)
+33 | EQUAL(REG:[15], CONST_0)
+34 | CONDJMP(CONST_37)
+"]
+    node_35 -> {node_32 }
+node_35 [label="35 | SUB(REG:[15], CONST_1)
+36 | JMP(CONST_32)
+"]
+    node_37 -> {node_40 node_40 }
+node_37 [label="37 | COPY(REG:[16], CONST_64)
+38 | AND(REG:[16], CONST_0)
+39 | CONDJMP(CONST_40)
+"]
+    node_40 -> {node_43 }
+node_40 [label="40 | ADD(REG:[4], CONST_6)
+41 | JMP(CONST_43)
+42 | REM(REG:[4], CONST_8)
+"]
+    node_43 -> {node_32 node_45 }
+node_43 [label="43 | EQUAL(REG:[2], CONST_26)
+44 | CONDJMP(CONST_32)
+"]
+    node_45 -> {}
+node_45 [label="45 | COPY(REG:[0], REG:[0])
+"]
+}

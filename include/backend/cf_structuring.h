@@ -3,7 +3,7 @@
 
 #include "backend/CFG.h"
 
-bool cfg_has_unvisited_edges(Cfg* cfg);
-Cfg* graph_slice(Cfg* cfg, Node* source, Node* sink);
+bool cfg_has_unvisited_edges(CFG* cfg);
+CFG* graph_slice(CFG* cfg, Node* source, Node* sink);
  
 #endif

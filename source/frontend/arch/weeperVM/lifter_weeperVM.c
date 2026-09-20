@@ -40,7 +40,7 @@ ASMOpcode opcode_to_ir(ASMOpcode opcode)
         return ATM_CALL;
 
     default:
-        fprintf(stderr, "Error lifting, the opcode number %d is not a valid opcode.\n", opcode);
+        fprintf(stderr, "\e[31m Error\e[0m: During lifting, the opcode number %d is not a valid opcode.\n", opcode);
         exit(1);
         break;
     }
@@ -67,7 +67,6 @@ IR *lifter_weeperVM(ASM *program)
     /* lift every instructions */
     for (int i = 0; i < program->nb_instructions; i++)
     {
-        // printf("%d\n", i);
         lift_instruction(ir, &program->instructions[i]);
     }
 
@@ -99,7 +98,7 @@ IR *lifter_weeperVM(ASM *program)
     //         }
     //         else
     //         {
-    //             fprintf(stderr, "[-] Unable to resolve the jump address, TODO: move this in SSA :)\n");
+    //             fprintf(stderr, "[-] Unable to resolve the jump address, TODO: move this... :)\n");
     //             exit(1);
     //         }
     //     }
@@ -249,6 +248,7 @@ void add_atomic_operation(IR *ir, AtomicInstr atom)
         ir->atomic_instructions = new_atoms;
     }
 
+    atom.offset = ir->index;
     ir->atomic_instructions[ir->index++] = atom;
 }
 
@@ -272,14 +272,13 @@ ValueId operand_to_id(ASMOperand *operand, AtomicInstr *ir_instruction, Size typ
         }
         else
         {
-            fprintf(stderr, "Error: The register doesn't have an index\n");
+            fprintf(stderr, "\e[31m Error\e[0m: The register doesn't have an index\n");
             exit(1);
         }
         break;
 
     case OPE_MEM:
-        fprintf(stderr, "Fatal error : OPE_MEM given to operand_to_id !\n");
-        exit(1);
+        fprintf(stderr, "\e[33m Warning\e[0m: OPE_MEM given to operand_to_id at line %d, defaulting to 0\n", ir_instruction->offset);
         break;
 
     default:

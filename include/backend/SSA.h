@@ -2,7 +2,8 @@
 #define H_SSA
 
 #include "backend/IR.h"
+#include "backend/CFG.h"
 
-void ir_to_ssa(IR* ir);
+void cfg_to_ssa(CFG* cfg);
 
 #endif

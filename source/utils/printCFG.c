@@ -4,7 +4,7 @@
 #include "backend/CFG.h"
 #include "backend/pretty_printer.h"
 
-void graph_to_graphviz(Cfg *cfg, const char *dot_file, const char *png_file) {
+void graph_to_graphviz(CFG *cfg, const char *dot_file, const char *png_file) {
     if (cfg == NULL)
         return;
     

@@ -9,6 +9,7 @@
 #include "architecture.h"
 
 #include "utils/utils.h"
+#include "utils/printCFG.h"
 
 #include "frontend/arch/weeperVM/lexer_weeperVM.h"
 #include "frontend/arch/weeperVM/parser_weeperVM.h"
@@ -24,10 +25,10 @@ Architecture architecture_weeperVM = {
 };
 
 #include "backend/pretty_printer.h"
+#include "backend/graph.h"
 #include "backend/SSA.h"
-// #include "backend/graph.h"
 // #include "backend/cf_structuring.h"
-// #include "utils/printCFG.h"
+
 
 static char doc[] = "ccg: Tini decompiler for classical or custom architecture.";
 static char args_doc[] = "[FILENAME]";
@@ -145,17 +146,16 @@ int decompile(char *arch, char *output, char *file_path)
     ASM *program = architecture->parser_arch(tokenList, nb_instructions);
     IR *ir = architecture->lifter_arch(program);
 
-    Visitor v;
-    visit_program(&v, ir, stdout);
+    // Visitor v;
+    // visit_program(&v, ir, stdout);
     
     /* backend */
-    ir_to_ssa(ir);
+    CFG* cfg = ir_to_cfg(ir);
+    
+    (void)cfg;
+    // cfg_to_ssa(cfg);
 
-    // cfg building
-    // CFG* cfg = ir_to_cfg(ir);
-
-    // // compute_dominance_frontier(cfg);
-    // // graph_to_graphviz(cfg, "graph.dot", "graph.png");
+    graph_to_graphviz(cfg, "graph_test.dot", "graph_test.png");
 
     // free_asm(program);
     // free_cfg(cfg);

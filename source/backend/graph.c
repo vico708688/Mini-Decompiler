@@ -43,7 +43,6 @@ void get_info_graph(IR *ir, int **list_node_indices, int *nb_basic_nodes, int *n
         
     }
 
-    // sort
     qsort((*list_node_indices), *nb_edges, sizeof(int), compare_ints);
 
     // remove duplicate
@@ -70,14 +69,16 @@ void get_info_graph(IR *ir, int **list_node_indices, int *nb_basic_nodes, int *n
     *nb_edges = nb_edges_final;
 }
 
-Cfg *initialize_empty_graph(int nb_nodes, int nb_edges)
+CFG *initialize_empty_graph(int nb_nodes, int nb_edges)
 {
-    Cfg *cfg = malloc(sizeof(Cfg));
+    CFG *cfg = malloc(sizeof(CFG));
     if (cfg == NULL)
     {
-        fprintf(stderr, "malloc() Cfg failed\n");
+        fprintf(stderr, "malloc() CFG failed\n");
         exit(1);
     }
+
+    cfg->header = calloc(1, sizeof(Node));
 
     cfg->nb_nodes = nb_nodes;
     cfg->node_idx = 0;
@@ -100,9 +101,9 @@ Cfg *initialize_empty_graph(int nb_nodes, int nb_edges)
     return cfg;
 }
 
-Cfg *initialize_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
+CFG *initialize_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
 {
-    Cfg *cfg = initialize_empty_graph(nb_nodes, nb_edges);
+    CFG *cfg = initialize_empty_graph(nb_nodes, nb_edges);
 
     // start node
     Node *start_node = &cfg->nodes[0];
@@ -130,7 +131,7 @@ AtomicInstr *get_instruction_from_node(Node *node, int instruction_offset)
     return (AtomicInstr *)(node->start_instruction + instruction_offset);
 }
 
-Node *find_node_from_start_instruction_offset(Cfg *cfg, int start_instruction_offset)
+Node *find_node_from_start_instruction_offset(CFG *cfg, int start_instruction_offset)
 {
     for (int i = 0; i < cfg->nb_nodes; i++)
     {
@@ -143,7 +144,7 @@ Node *find_node_from_start_instruction_offset(Cfg *cfg, int start_instruction_of
     return NULL;
 }
 
-void update_neighbour_nodes(Cfg *cfg, Node *current_node, int next_node_start_instruction_offset)
+void update_neighbour_nodes(CFG *cfg, Node *current_node, int next_node_start_instruction_offset)
 {
     Node *true_branch_node = find_node_from_start_instruction_offset(cfg, next_node_start_instruction_offset);
     current_node->successors[(current_node->successor_idx)++] = true_branch_node;
@@ -161,7 +162,7 @@ void update_neighbour_nodes(Cfg *cfg, Node *current_node, int next_node_start_in
     true_branch_node->predecessors[(true_branch_node->predecessor_idx)++] = current_node;
 }
 
-void create_edge(Cfg *cfg, Node *start, Node *target)
+void create_edge(CFG *cfg, Node *start, Node *target)
 {
     if (cfg->edge_idx >= cfg->nb_edges)
     {
@@ -183,7 +184,7 @@ void create_edge(Cfg *cfg, Node *start, Node *target)
  * Add: basic graph with only 1 node (ex: mov reg[0], reg[0]
  *                                        call putchar      )
  */
-Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_instruction_last_node)
+Node *generate_subgraph_from_instruction_offset(CFG *cfg, int instruction_offset, int last_instruction_last_node)
 {
     Node *current_node = find_node_from_start_instruction_offset(cfg, instruction_offset);
     if (current_node == NULL)
@@ -198,6 +199,7 @@ Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_ins
     }
 
     AtomicInstr *last_instruction = get_instruction_from_node(current_node, current_node->nb_instructions - 1);
+    printf("last instruction offset: %d\n", last_instruction->offset);
     if (instruction_offset == START_NODE)
     {
         cfg->header = current_node;
@@ -218,7 +220,7 @@ Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_ins
 
         update_neighbour_nodes(cfg, current_node, true_branch_start_instruction_offset);
 
-        Node *true_node = generate_subgraph_from_node(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
+        Node *true_node = generate_subgraph_from_instruction_offset(cfg, true_branch_start_instruction_offset, last_instruction_last_node);
         if (true_node != NULL)
         {
             create_edge(cfg, current_node, true_node);
@@ -231,10 +233,11 @@ Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_ins
             (current_node->nb_successors)++;
             current_node->successors = realloc(current_node->successors, current_node->nb_successors * sizeof(Node *));
             int false_branch_start_instruction_offset = last_instruction->offset + 1;
+            printf("instruction %d: true -> %d; false -> %d\n", last_instruction->offset, true_branch_start_instruction_offset, false_branch_start_instruction_offset);
 
             update_neighbour_nodes(cfg, current_node, false_branch_start_instruction_offset);
 
-            Node *false_node = generate_subgraph_from_node(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
+            Node *false_node = generate_subgraph_from_instruction_offset(cfg, false_branch_start_instruction_offset, last_instruction_last_node);
             if (false_node != NULL)
             {
                 create_edge(cfg, current_node, false_node);
@@ -250,7 +253,7 @@ Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_ins
 
         update_neighbour_nodes(cfg, current_node, next_node_start_instruction_offset);
 
-        Node *next_node = generate_subgraph_from_node(cfg, next_node_start_instruction_offset, last_instruction_last_node);
+        Node *next_node = generate_subgraph_from_instruction_offset(cfg, next_node_start_instruction_offset, last_instruction_last_node);
         if (next_node != NULL)
         {
             create_edge(cfg, current_node, next_node);
@@ -260,11 +263,11 @@ Node *generate_subgraph_from_node(Cfg *cfg, int instruction_offset, int last_ins
     return current_node;
 }
 
-Cfg *create_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
+CFG *create_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
 {
-    Cfg *cfg = initialize_graph(ir, list_node_indices, nb_nodes, nb_edges);
+    CFG *cfg = initialize_graph(ir, list_node_indices, nb_nodes, nb_edges);
 
-    generate_subgraph_from_node(cfg, START_NODE, ir->index - 1);
+    generate_subgraph_from_instruction_offset(cfg, START_NODE, ir->index - 1);
 
     /* reset each node to unvisited state */
     for (int i = 0; i < cfg->nb_nodes; i++)
@@ -275,15 +278,16 @@ Cfg *create_graph(IR *ir, int *list_node_indices, int nb_nodes, int nb_edges)
     return cfg;
 }
 
-Cfg *asm_to_cfg(IR *ir)
+CFG *ir_to_cfg(IR *ir)
 {
     int *list_node_indices;
     int nb_nodes;
     int nb_edges;
 
     get_info_graph(ir, &list_node_indices, &nb_nodes, &nb_edges);
+    printf("nb_nodes = %d; nb_edges = %d\n", nb_nodes, nb_edges);
 
-    Cfg *cfg = create_graph(ir, list_node_indices, nb_nodes, nb_edges);
+    CFG *cfg = create_graph(ir, list_node_indices, nb_nodes, nb_edges);
 
     free(list_node_indices);
 

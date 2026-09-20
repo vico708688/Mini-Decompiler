@@ -8,7 +8,7 @@
 #include "backend/graph.h"
 #include "utils/utils.h"
 
-bool cfg_has_unvisited_edges(Cfg* cfg)
+bool cfg_has_unvisited_edges(CFG* cfg)
 {
     for (int i = 0; i < cfg->nb_edges; i++)
     {
@@ -20,12 +20,12 @@ bool cfg_has_unvisited_edges(Cfg* cfg)
     return false;
 }
 
-// Cfg* graph_slice(Cfg* cfg, Node* source, Node* sink)
+// CFG* graph_slice(CFG* cfg, Node* source, Node* sink)
 // {
 //     /* At least 2 nodes (source and sink) and 1 edge */
 //     int nb_nodes = 2;
 //     int nb_edges = 1;
-//     Cfg* slice = initialize_empty_graph(nb_nodes, nb_edges);
+//     CFG* slice = initialize_empty_graph(nb_nodes, nb_edges);
 
 //     Stack stack;
 //     stack.nb_nodes = nb_nodes;

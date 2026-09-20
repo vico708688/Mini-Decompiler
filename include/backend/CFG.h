@@ -24,7 +24,7 @@ typedef struct Edge Edge;
  *  - explicit (every edge exist at once)
  *  - unlabeled
  */
-typedef struct Cfg
+typedef struct CFG
 {
     Node *header;
 
@@ -35,7 +35,7 @@ typedef struct Cfg
     Edge *edges;
     int nb_edges;
     int edge_idx;
-} Cfg;
+} CFG;
 
 typedef struct Node
 {

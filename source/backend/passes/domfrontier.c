@@ -6,7 +6,7 @@
 #include "backend/CFG.h"
 
 
-void DFS(Cfg* cfg, Node* node, List* list_nodes)
+void DFS(CFG* cfg, Node* node, List* list_nodes)
 {
     node->visited = true;
     for (int i = 0; i < node->nb_successors; i++)
@@ -36,7 +36,7 @@ void DFS(Cfg* cfg, Node* node, List* list_nodes)
 /**
  * Also called topological sort
  */
-void reverse_post_order(Cfg* cfg, Node*** list_nodes)
+void reverse_post_order(CFG* cfg, Node*** list_nodes)
 {
     Node** temp = malloc(cfg->nb_nodes * sizeof(Node*));
     List list;
@@ -89,7 +89,7 @@ Node* intersect(Node* b1, Node* b2)
  * idom(b): immediate dominator of b, "dominator closest to b"
  * 
  */
-void compute_idom(Cfg* cfg)
+void compute_idom(CFG* cfg)
 {
     /* reverse postorder list computation */
     Node** list_post_order = malloc(cfg->nb_nodes * sizeof(Node*));
@@ -176,7 +176,7 @@ void add_to_set(Node* b, Node* runner)
     runner->dominator_frontier[(runner->dominator_idx)++] = b;
 }
 
-void compute_dominance_frontier(Cfg* cfg)
+void compute_dominance_frontier(CFG* cfg)
 {
     compute_idom(cfg);
 

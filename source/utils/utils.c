@@ -229,7 +229,7 @@ void free_edge(Edge *edge)
 	free(edge);
 }
 
-void free_cfg(Cfg *cfg)
+void free_cfg(CFG *cfg)
 {
 	for (int i = 0; i < cfg->nb_nodes; i++)
 	{
@@ -245,7 +245,7 @@ char *extract_sub_string(char **string, int len)
 	char *subString = malloc((len + 1) * sizeof(char));
 	if (subString == NULL)
 	{
-		perror("Error malloc\n");
+		perror("\e[31m Error\e[0m malloc\n");
 		exit(1);
 	}
 

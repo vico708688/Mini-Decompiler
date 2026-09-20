@@ -32,13 +32,13 @@ void init_regexes(regexList* regexes)
 {
 	if(regcomp(&(regexes->integer), "^[0-9]+", REG_EXTENDED))
 	{
-		perror("Error regcomp integer\n");
+		perror("\e[31m Error\e[0m regcomp integer\n");
 		exit(1);
 	}
 
 	if(regcomp(&(regexes->charac), "^[[:alpha:]][a-zA-Z_0-9]*", REG_EXTENDED))
 	{
-		perror("Error regcomp character\n");
+		perror("\e[31m Error\e[0m regcomp character\n");
 		exit(1);
 	}
 }
@@ -62,7 +62,7 @@ char* print_token(Token* token)
 
 void error(char* error_str, Token* token)
 {
-    fprintf(stderr, "Error at line %d, column %d with token '%s' : %s\n", token->line, token->column, print_token(token), error_str);
+    fprintf(stderr, "\e[31m Error\e[0m at line %d, column %d with token '%s' : %s\n", token->line, token->column, print_token(token), error_str);
     exit(1);
 }
 
@@ -78,7 +78,7 @@ void addToken(TokenList *tokenList, enum TokenKind kind, union TokenValue value,
 		if (tmp == NULL)
 		{
 				free_tokens_weeperVM(tokenList);
-				perror("Error realloc\n");
+				perror("\e[31m Error\e[0m realloc\n");
 				exit(1);
 		}
 		tokenList->tokens = tmp;
@@ -271,7 +271,7 @@ TokenList* init_token_list(char** text)
 
 	if (tokenList == NULL)
 	{
-		printf("Error tokenList malloc.\n");
+		printf("\e[31m Error\e[0m tokenList malloc.\n");
 		exit(1);
 	}
 	
@@ -280,7 +280,7 @@ TokenList* init_token_list(char** text)
 
 	if ((tokenList->tokens = calloc(tokenList->nb_tokens, sizeof(Token))) == NULL)
 	{
-		perror("Error calloc\n");
+		perror("\e[31m Error\e[0m calloc\n");
 		exit(1);
 	}
 

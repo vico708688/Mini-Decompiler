@@ -9,10 +9,10 @@ typedef struct List
     int index;
 } List;
 
-void compute_dominance_frontier(Cfg *cfg);
-void compute_idom(Cfg *cfg);
+void compute_dominance_frontier(CFG *cfg);
+void compute_idom(CFG *cfg);
 Node *intersect(Node *b1, Node *b2);
-void reverse_post_order(Cfg *cfg, Node ***list_nodes);
-void DFS(Cfg *cfg, Node *node, List *list_nodes);
+void reverse_post_order(CFG *cfg, Node ***list_nodes);
+void DFS(CFG *cfg, Node *node, List *list_nodes);
 
 #endif

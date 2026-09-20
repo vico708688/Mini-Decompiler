@@ -30,7 +30,7 @@ void free_ir(IR* program);
 // void free_operand(Operand* operand);
 // void free_condition(Condition* condition);
 
-void free_cfg(Cfg* cfg);
+void free_cfg(CFG* cfg);
 void free_node(Node* node);
 void free_edge(Edge* edge);
 
