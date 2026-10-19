@@ -15,8 +15,8 @@ flowchart TD
     Dec --> IR[IR]
     IR --> SSA[SSA Mostly done]
     SSA --> CFG[CFG]
-    CFG --> Opt[Optimisations TODO\nconstant folding, propagation...]
-    Opt --> Struct[CFG structuration TODO\nNo More Gotos]
+    CFG --> Opt[Optimisations TODO<br>constant folding, propagation...]
+    Opt --> Struct[CFG structuration TODO<br>No More Gotos]
     Struct --> AST[AST]
     AST --> Out[C Code / pseudo-code]
 ```
