@@ -2,44 +2,24 @@
 
 ccg est un projet de mini-decompilateur pour custom ISA (peut-être Intel dans le futur)
 
-Pour l'instant, seulement la création du graphe flot de contrôle est faite :
+Pour l'instant, ce décompilateur n'est pas fini.
 
-/**
- * It assumes as input an assembler code file from a disassembler that
- * already converted binary opcodes to mnemonic representation and added
- * location labels for jumps.
- *
- *        VM Instructions
-                │
-                v
-      Architecture selection                <- done
-                │
-                v
-             Decoding                       <- done
-                │
-                v
-                IR                          <- done
-                │
-                v
-               SSA                          <- mostly done
-                │
-                v
-               CFG                          <- done
-                │
-                v
-          Optimisations                     <- TODO
- (constant folding, propagation...)
-                │
-                v
-        CFG structuration                   <- TODO
-         (No More Gotos)
-                │
-                v
-               AST                          <- 
-                │
-                v
-        C Code / pseudo-code                <- 
- */
+> **Note :** It assumes as input an assembler code file from a disassembler that already converted binary opcodes to mnemonic representation and added location labels for jumps.
+
+### Pipeline Architecture
+
+```mermaid
+flowchart TD
+    In[VM Instructions] --> Arch[Architecture selection]
+    Arch --> Dec[Decoding]
+    Dec --> IR[IR]
+    IR --> SSA[SSA Mostly done]
+    SSA --> CFG[CFG]
+    CFG --> Opt[Optimisations TODO\nconstant folding, propagation...]
+    Opt --> Struct[CFG structuration TODO\nNo More Gotos]
+    Struct --> AST[AST]
+    AST --> Out[C Code / pseudo-code]
+```
 
 TODO:
 * Arenas
